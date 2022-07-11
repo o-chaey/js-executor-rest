@@ -51,6 +51,7 @@ public class IsolatedJsTask implements LanguageTask {
     private String execResult;
     private final UUID id;
     private String stackTrace;
+    private final Object lock = new Object();
 
     /**
      * One and only constructor.
@@ -188,41 +189,43 @@ public class IsolatedJsTask implements LanguageTask {
      * a language engine implementation.
      */
     @Override
-    public synchronized void execute() {
-        switch (currentStatus) {
-            case SCHEDULED -> {
-                currentStatus = Status.RUNNING;
-                Value result = null;
-                try {
-                    result = polyglotContext.eval(
-                            // can it even fail if loaded from a string?
-                            // who knows... nothing in the docs
-                            // also we have a context per script, so having a particular name
-                            // for a script inside a context shouldn't matter
-                            Source.newBuilder(LANG, sourceCode, "Task")
-                                  .build()
-                    );
-                } catch (IOException e) {
-                    throw new IllegalStateException(e);
-                } catch (PolyglotException e) {
-                    StringBuilder stringBuilder = new StringBuilder("");
-                    stringBuilder.append("Exit code: ").append(e.getExitStatus()).append("\n");
-                    stringBuilder.append(e.getMessage());
-                    StreamSupport.stream(e.getPolyglotStackTrace().spliterator(), false)
-                                 // don't wanna leak implementation details, do we?
-                                 // though some formatting or wording may still be unique to GraalVM
-                                 .filter(PolyglotException.StackFrame::isGuestFrame)
-                                 .forEach(obj -> stringBuilder.append(obj).append("\n"));
-                    this.stackTrace = stringBuilder.toString();
-                } finally {
-                    execResult = result == null ? "" : result.toString();
-                    currentStatus = Status.FINISHED;
-                    polyglotContext.close();
-                }
+    public void execute() {
+        synchronized (lock) {
+            switch (currentStatus) {
+                case SCHEDULED -> currentStatus = Status.RUNNING;
+                case RUNNING -> throw new DoubleStartException(this.id);
+                case FINISHED, CANCELED -> throw new NotRestartedException(this.id, currentStatus);
             }
-            case RUNNING -> throw new DoubleStartException(this.id);
-            case FINISHED, CANCELED -> throw new NotRestartedException(this.id, currentStatus);
         }
+
+        Value result = null;
+        try {
+            result = polyglotContext.eval(
+                    // can it even fail if loaded from a string?
+                    // who knows... nothing in the docs
+                    // also we have a context per script, so having a particular name
+                    // for a script inside a context shouldn't matter
+                    Source.newBuilder(LANG, sourceCode, "Task")
+                          .build()
+            );
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        } catch (PolyglotException e) {
+            StringBuilder stringBuilder = new StringBuilder("");
+            stringBuilder.append("Exit code: ").append(e.getExitStatus()).append("\n");
+            stringBuilder.append(e.getMessage());
+            StreamSupport.stream(e.getPolyglotStackTrace().spliterator(), false)
+                         // don't wanna leak implementation details, do we?
+                         // though some formatting or wording may still be unique to GraalVM
+                         .filter(PolyglotException.StackFrame::isGuestFrame)
+                         .forEach(obj -> stringBuilder.append(obj).append("\n"));
+            this.stackTrace = stringBuilder.toString();
+        } finally {
+            execResult = result == null ? "" : result.toString();
+            currentStatus = Status.FINISHED;
+            polyglotContext.close();
+        }
+
 
     }
 
@@ -234,10 +237,12 @@ public class IsolatedJsTask implements LanguageTask {
      * {@link Status#CANCELED}.
      */
     @Override
-    public synchronized void cancel() {
-        switch (currentStatus) {
-            case SCHEDULED, RUNNING -> this.currentStatus = Status.CANCELED;
-            case FINISHED, CANCELED -> throw new DoubleStopException(this.id, currentStatus);
+    public void cancel() {
+        synchronized (lock) {
+            switch (currentStatus) {
+                case SCHEDULED, RUNNING -> this.currentStatus = Status.CANCELED;
+                case FINISHED, CANCELED -> throw new DoubleStopException(this.id, currentStatus);
+            }
         }
     }
 
@@ -249,12 +254,14 @@ public class IsolatedJsTask implements LanguageTask {
      * {@link Status#SCHEDULED}.
      */
     @Override
-    public synchronized void restart() {
-        switch (currentStatus) {
-            case CANCELED, FINISHED -> {
-                this.currentStatus = Status.SCHEDULED;
+    public void restart() {
+        synchronized (lock) {
+            switch (currentStatus) {
+                case CANCELED, FINISHED -> {
+                    this.currentStatus = Status.SCHEDULED;
+                }
+                case RUNNING, SCHEDULED -> throw new IllegalRestartException(this.id, currentStatus);
             }
-            case RUNNING, SCHEDULED -> throw new IllegalRestartException(this.id, currentStatus);
         }
     }
 }
