@@ -64,8 +64,7 @@ public interface LanguageTask {
      * <p>
      * Generally, should combine output of {@link #getId()},
      * {@link #getSource()}, {@link #getStatus()},
-     * {@link #getOutputSoFar()}, {@link #getErrors()},
-     * {@link #getExecResult()}.
+     * {@link #getOutputSoFar()}.
      *
      * @return all relative info describing the task
      */
@@ -106,27 +105,6 @@ public interface LanguageTask {
      * @return standard out output of the script
      */
     Data getOutputSoFar();
-
-    /**
-     * Returns value, returned by the script as a whole, if any. <br>
-     * E.g. script like "40+2" will return 42, if such grammar is allowed
-     * by the language.
-     *
-     * @return string representing script return value
-     */
-
-    String getExecResult();
-
-    /**
-     * Returns errors from inside the script (e.g. division by zero),
-     * or caused by it (e.g. reaching resource consumption limit), if any.
-     * <p>
-     * Generally shouldn't (mustn't if guest code is untrusted) return stack frames
-     * from inside host code.
-     *
-     * @return string representing errors, associated with the script, possibly empty.
-     */
-    String getErrors();
 
     /**
      * Executes the task.

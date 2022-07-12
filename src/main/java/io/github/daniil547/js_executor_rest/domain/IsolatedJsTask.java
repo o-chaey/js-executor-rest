@@ -4,6 +4,7 @@ import io.github.daniil547.js_executor_rest.exceptions.DoubleStartException;
 import io.github.daniil547.js_executor_rest.exceptions.DoubleStopException;
 import io.github.daniil547.js_executor_rest.exceptions.NotRestartedException;
 import org.graalvm.polyglot.*;
+import org.yaml.snakeyaml.util.ArrayUtils;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -45,27 +46,26 @@ public class IsolatedJsTask implements LanguageTask {
     private final String sourceCode;
     private Status currentStatus;
     private final ByteArrayOutputStream out;
-    private final Optional<Data> input;
+    private String errors;
     private final StreamType outputType;
-    private String execResult;
     private final UUID id;
-    private String stackTrace;
     private final Object lock = new Object();
 
     /**
      * One and only constructor.
      *
      * @param sourceCode     - JavaScript code to be executed
-     * @param input          - input for script to consume, either binary or text (UTF-8 in this impl); not required
      * @param outputType     - desired type of output, binary or text (UTF-8 in this impl)
      * @param statementLimit - maximum number of statements allowed to be executed by this task
      */
-    public IsolatedJsTask(String sourceCode, Optional<Data> input, StreamType outputType, long statementLimit) {
-        this.input = input;
+    public IsolatedJsTask(String sourceCode, StreamType outputType, long statementLimit) {
         this.outputType = outputType;
         this.out = new ByteArrayOutputStream();
         Context.Builder builder = Context.newBuilder(LANG)
+                                         .in(InputStream.nullInputStream())
                                          .out(new BufferedOutputStream(out))
+                                         //provided, but unused by GraalJS
+                                         .err(new BufferedOutputStream(out))
                                          .allowHostAccess(HostAccess.NONE)
                                          .allowPolyglotAccess(PolyglotAccess.NONE)
                                          .allowCreateProcess(false)
@@ -88,19 +88,6 @@ public class IsolatedJsTask implements LanguageTask {
                                                                // this is for other actions
                                                                .onLimit((s) -> this.cancel())
                                                                .build());
-        if (input.isPresent()) {
-            Data data = input.get();
-            BufferedInputStream in = new BufferedInputStream(
-                    new ByteArrayInputStream(
-                            switch (data) {
-                                case Text t -> t.text()
-                                                .getBytes(StandardCharsets.UTF_8);
-                                case Binary b -> b.bytes();
-                            }
-                    )
-            );
-            builder.in(in);
-        }
 
         this.polyglotContext = builder.build();
         this.sourceCode = sourceCode;
@@ -111,8 +98,7 @@ public class IsolatedJsTask implements LanguageTask {
     /**
      * Returns combined output of {@link #getId()},
      * {@link #getSource()}, {@link #getStatus()},
-     * {@link #getOutputSoFar()}, {@link #getErrors()},
-     * {@link #getExecResult()} and {@link #input}.
+     * {@link #getOutputSoFar()}.
      *
      * @return info describing the task
      */
@@ -127,10 +113,7 @@ public class IsolatedJsTask implements LanguageTask {
 
         info.put("id", Data.of(getId().toString()));
         info.put("status", Data.of(status.toString()));
-        info.put("input", input.orElse(Data.of("")));
         info.put("outputSoFar", getOutputSoFar());
-        info.put("errors", Data.of(getErrors()));
-        info.put("exitValue", Data.of(getExecResult()));
 
         return info;
     }
@@ -157,19 +140,11 @@ public class IsolatedJsTask implements LanguageTask {
     @Override
     public Data getOutputSoFar() {
         return switch (outputType) {
-            case TEXT -> new Text(out.toString(StandardCharsets.UTF_8));
+            case TEXT -> new Text(out.toString(StandardCharsets.UTF_8) + errors);
+            // errors aren't concatenated here cause binary i/o
+            // will be dropped in the next commit
             case BINARY -> new Binary(out.toByteArray());
         };
-    }
-
-    @Override
-    public String getExecResult() {
-        return this.execResult;
-    }
-
-    @Override
-    public String getErrors() {
-        return this.stackTrace;
     }
 
 
@@ -197,9 +172,8 @@ public class IsolatedJsTask implements LanguageTask {
             }
         }
 
-        Value result = null;
         try {
-            result = polyglotContext.eval(
+            polyglotContext.eval(
                     // can it even fail if loaded from a string?
                     // who knows... nothing in the docs
                     // also we have a context per script, so having a particular name
@@ -209,23 +183,21 @@ public class IsolatedJsTask implements LanguageTask {
             );
         } catch (IOException e) {
             throw new IllegalStateException(e);
+        // GraalJS doesn't write errors to its err, even though it is provided
+        // to the builder in the constructor above
         } catch (PolyglotException e) {
-            StringBuilder stringBuilder = new StringBuilder("");
-            stringBuilder.append("Exit code: ").append(e.getExitStatus()).append("\n");
-            stringBuilder.append(e.getMessage());
+            StringBuilder errorAcumulator = new StringBuilder("");
+            errorAcumulator.append(e.getMessage());
             StreamSupport.stream(e.getPolyglotStackTrace().spliterator(), false)
                          // don't wanna leak implementation details, do we?
                          // though some formatting or wording may still be unique to GraalVM
                          .filter(PolyglotException.StackFrame::isGuestFrame)
-                         .forEach(obj -> stringBuilder.append(obj).append("\n"));
-            this.stackTrace = stringBuilder.toString();
+                         .forEach(obj -> errorAcumulator.append(obj).append("\n"));
+            errors = errorAcumulator.toString();
         } finally {
-            execResult = result == null ? "" : result.toString();
             currentStatus = Status.FINISHED;
             polyglotContext.close();
         }
-
-
     }
 
     /**

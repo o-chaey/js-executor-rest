@@ -19,7 +19,6 @@ public class IsolatedJsTaskTest {
     @DisplayName("execution must not block for its entire duration")
     public void nonBlockingExecute() throws InterruptedException {
         IsolatedJsTask task = new IsolatedJsTask("while (true) {console.log(\"hello\");}",
-                                                 Optional.empty(),
                                                  LanguageTask.StreamType.TEXT,
                                                  Long.MAX_VALUE);
         Thread executor = new Thread(task::execute);

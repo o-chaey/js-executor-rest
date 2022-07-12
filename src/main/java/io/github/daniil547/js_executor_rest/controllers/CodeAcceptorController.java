@@ -3,9 +3,7 @@ package io.github.daniil547.js_executor_rest.controllers;
 import io.github.daniil547.js_executor_rest.domain.Data;
 import io.github.daniil547.js_executor_rest.domain.IsolatedJsTask;
 import io.github.daniil547.js_executor_rest.domain.LanguageTask;
-import io.github.daniil547.js_executor_rest.dtos.BinaryInputTaskDto;
 import io.github.daniil547.js_executor_rest.dtos.NoInputTaskDto;
-import io.github.daniil547.js_executor_rest.dtos.TextInputTaskDto;
 import io.github.daniil547.js_executor_rest.services.TaskDispatcher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,7 +13,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -66,36 +63,9 @@ public class CodeAcceptorController {
         return ResponseEntity.ok(taskDispatcher.getTask(id).getOutputSoFar());
     }
 
-    @GetMapping("{id}/errors")
-    public ResponseEntity<String> getTaskErrors(@PathVariable UUID id) {
-        return ResponseEntity.ok(taskDispatcher.getTask(id).getErrors());
-    }
-
-    @PostMapping("text-input")
-    public ResponseEntity<String> submitTaskTextInput(@RequestBody TextInputTaskDto dto) {
-        return doSubmitTask(dto.source(),
-                            Optional.of(Data.of(dto.input())),
-                            dto.desiredOutputType());
-    }
-
-    @PostMapping("binary-input")
-    public ResponseEntity<String> submitTaskBinaryInput(@RequestBody BinaryInputTaskDto dto) {
-        return doSubmitTask(dto.source(),
-                            Optional.of(Data.of(dto.input())),
-                            dto.desiredOutputType());
-    }
-
-    @PostMapping(consumes = "application/json")
+    @PostMapping()
     public ResponseEntity<String> submitTaskNoInput(@RequestBody NoInputTaskDto dto) {
-        return doSubmitTask(dto.source(), Optional.empty(), dto.desiredOutputType());
-    }
-
-    private ResponseEntity<String> doSubmitTask(
-            String source,
-            Optional<Data> input,
-            LanguageTask.StreamType desiredOutputType
-    ) {
-        IsolatedJsTask newTask = new IsolatedJsTask(source, input, desiredOutputType, statementLimit);
+        IsolatedJsTask newTask = new IsolatedJsTask(dto.source(), dto.desiredOutputType(), statementLimit);
         taskDispatcher.addForExecution(newTask);
 
         return new ResponseEntity<>(newTask.getId().toString(), HttpStatus.CREATED);
