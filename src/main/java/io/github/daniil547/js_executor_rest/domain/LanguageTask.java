@@ -44,21 +44,6 @@ public interface LanguageTask {
     }
 
     /**
-     * Tells whether a (input or output) stream  of the script
-     * is character or binary.
-     */
-    public static enum StreamType {
-        /**
-         * Associated stream should be binary.
-         */
-        BINARY,
-        /**
-         * Associated stream should be a character stream.
-         */
-        TEXT;
-    }
-
-    /**
      * Any info about the task that user might want to know
      * (and is allowed to be disclosed).
      * <p>
@@ -68,7 +53,7 @@ public interface LanguageTask {
      *
      * @return all relative info describing the task
      */
-    Map<String, Data> getInfo();
+    Map<String, String> getInfo();
 
 
     /**
@@ -104,7 +89,7 @@ public interface LanguageTask {
      *
      * @return standard out output of the script
      */
-    Data getOutputSoFar();
+    String getOutputSoFar();
 
     /**
      * Executes the task.

@@ -4,13 +4,11 @@ import io.github.daniil547.js_executor_rest.exceptions.DoubleStartException;
 import io.github.daniil547.js_executor_rest.exceptions.DoubleStopException;
 import io.github.daniil547.js_executor_rest.exceptions.NotRestartedException;
 import org.graalvm.polyglot.*;
-import org.yaml.snakeyaml.util.ArrayUtils;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.StreamSupport;
 
@@ -47,7 +45,6 @@ public class IsolatedJsTask implements LanguageTask {
     private Status currentStatus;
     private final ByteArrayOutputStream out;
     private String errors;
-    private final StreamType outputType;
     private final UUID id;
     private final Object lock = new Object();
 
@@ -55,11 +52,9 @@ public class IsolatedJsTask implements LanguageTask {
      * One and only constructor.
      *
      * @param sourceCode     - JavaScript code to be executed
-     * @param outputType     - desired type of output, binary or text (UTF-8 in this impl)
      * @param statementLimit - maximum number of statements allowed to be executed by this task
      */
-    public IsolatedJsTask(String sourceCode, StreamType outputType, long statementLimit) {
-        this.outputType = outputType;
+    public IsolatedJsTask(String sourceCode, long statementLimit) {
         this.out = new ByteArrayOutputStream();
         Context.Builder builder = Context.newBuilder(LANG)
                                          .in(InputStream.nullInputStream())
@@ -103,16 +98,16 @@ public class IsolatedJsTask implements LanguageTask {
      * @return info describing the task
      */
     @Override
-    public Map<String, Data> getInfo() {
+    public Map<String, String> getInfo() {
         // to maintain insertion order (for nicer output to the user)
-        // might be replaced with something like List<Pair<String, Data>>
+        // might be replaced with something like List<Pair<String, String>>
         // but it requires a Pair class (3rd-party dep or handwritten)
         // and might not be autoconverted to JSON
-        Map<String, Data> info = new LinkedHashMap<>();
+        Map<String, String> info = new LinkedHashMap<>();
         Status status = getStatus();
 
-        info.put("id", Data.of(getId().toString()));
-        info.put("status", Data.of(status.toString()));
+        info.put("id", getId().toString());
+        info.put("status", status.toString());
         info.put("outputSoFar", getOutputSoFar());
 
         return info;
@@ -138,13 +133,8 @@ public class IsolatedJsTask implements LanguageTask {
     }
 
     @Override
-    public Data getOutputSoFar() {
-        return switch (outputType) {
-            case TEXT -> new Text(out.toString(StandardCharsets.UTF_8) + errors);
-            // errors aren't concatenated here cause binary i/o
-            // will be dropped in the next commit
-            case BINARY -> new Binary(out.toByteArray());
-        };
+    public String getOutputSoFar() {
+        return out.toString(StandardCharsets.UTF_8) + errors;
     }
 
 
@@ -183,8 +173,8 @@ public class IsolatedJsTask implements LanguageTask {
             );
         } catch (IOException e) {
             throw new IllegalStateException(e);
-        // GraalJS doesn't write errors to its err, even though it is provided
-        // to the builder in the constructor above
+            // GraalJS doesn't write errors to its err, even though it is provided
+            // to the builder in the constructor above
         } catch (PolyglotException e) {
             StringBuilder errorAcumulator = new StringBuilder("");
             errorAcumulator.append(e.getMessage());

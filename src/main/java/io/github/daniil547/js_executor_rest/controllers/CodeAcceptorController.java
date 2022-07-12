@@ -1,6 +1,5 @@
 package io.github.daniil547.js_executor_rest.controllers;
 
-import io.github.daniil547.js_executor_rest.domain.Data;
 import io.github.daniil547.js_executor_rest.domain.IsolatedJsTask;
 import io.github.daniil547.js_executor_rest.domain.LanguageTask;
 import io.github.daniil547.js_executor_rest.dtos.NoInputTaskDto;
@@ -36,7 +35,7 @@ public class CodeAcceptorController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Map<String, Data>>> getAllTasksInfo() {
+    public ResponseEntity<List<Map<String, String>>> getAllTasksInfo() {
         return ResponseEntity.ok(taskDispatcher.getAllTasks()
                                                .stream()
                                                .map(LanguageTask::getInfo)
@@ -44,7 +43,7 @@ public class CodeAcceptorController {
     }
 
     @GetMapping("{id}/")
-    public ResponseEntity<Map<String, Data>> getTaskInfo(@PathVariable UUID id) {
+    public ResponseEntity<Map<String, String>> getTaskInfo(@PathVariable UUID id) {
         return ResponseEntity.ok(taskDispatcher.getTask(id).getInfo());
     }
 
@@ -59,13 +58,13 @@ public class CodeAcceptorController {
     }
 
     @GetMapping("{id}/output")
-    public ResponseEntity<Data> getTaskOutput(@PathVariable UUID id) {
+    public ResponseEntity<String> getTaskOutput(@PathVariable UUID id) {
         return ResponseEntity.ok(taskDispatcher.getTask(id).getOutputSoFar());
     }
 
     @PostMapping()
     public ResponseEntity<String> submitTaskNoInput(@RequestBody NoInputTaskDto dto) {
-        IsolatedJsTask newTask = new IsolatedJsTask(dto.source(), dto.desiredOutputType(), statementLimit);
+        IsolatedJsTask newTask = new IsolatedJsTask(dto.source(), statementLimit);
         taskDispatcher.addForExecution(newTask);
 
         return new ResponseEntity<>(newTask.getId().toString(), HttpStatus.CREATED);
