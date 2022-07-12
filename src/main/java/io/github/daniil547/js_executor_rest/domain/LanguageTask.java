@@ -39,9 +39,6 @@ public interface LanguageTask {
          * or with errors. This means that output is no longer written,
          * no errors will be thrown etc. In other words, the task's
          * object must not be mutated. <br>
-         * However, it might still be restarted, in which case the state
-         * must be changed back to {@link Status#SCHEDULED} or
-         * {@link Status#RUNNING}.
          */
         FINISHED;
     }
@@ -158,12 +155,4 @@ public interface LanguageTask {
      * must return {@link Status#CANCELED}.
      */
     void cancel();
-
-    /**
-     * Restarts the task. Actual effect is up to implementation.
-     * <p>
-     * After invocation of this method, {@link #getStatus}
-     * must return {@link Status#SCHEDULED}.
-     */
-    void restart();
 }

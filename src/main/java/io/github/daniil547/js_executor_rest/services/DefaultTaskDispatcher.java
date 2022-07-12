@@ -1,7 +1,6 @@
 package io.github.daniil547.js_executor_rest.services;
 
 import io.github.daniil547.js_executor_rest.domain.LanguageTask;
-import io.github.daniil547.js_executor_rest.exceptions.IllegalRestartException;
 import io.github.daniil547.js_executor_rest.exceptions.TaskNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -45,22 +44,6 @@ public class DefaultTaskDispatcher implements TaskDispatcher {
             getTask(id).cancel();
             futureRegister.get(id).cancel(true);
             futureRegister.remove(id);
-        }
-    }
-
-
-    @Override
-    public void restartExecution(UUID id) {
-
-        // synchronize on the specific task object
-        synchronized (getTask(id)) {
-            LanguageTask.Status status = getTask(id).getStatus();
-            if (status == LanguageTask.Status.CANCELED
-                    || status == LanguageTask.Status.FINISHED) {
-                futureRegister.put(id, threadPool.submit(getTask(id)::execute));
-            } else {
-                throw new IllegalRestartException(id, status);
-            }
         }
     }
 

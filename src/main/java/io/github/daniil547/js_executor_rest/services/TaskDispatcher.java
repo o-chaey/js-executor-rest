@@ -27,13 +27,6 @@ public interface TaskDispatcher {
     void cancelExecution(UUID id);
 
     /**
-     * Restarts a task. Task must be canceled beforehand.
-     *
-     * @param id if of the task to restart
-     */
-    void restartExecution(UUID id);
-
-    /**
      * Removes the task from this dispatcher, ceasing execution.
      *
      * @param id id of a task to delete

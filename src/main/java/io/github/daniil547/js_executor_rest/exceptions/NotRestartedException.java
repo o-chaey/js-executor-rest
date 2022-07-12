@@ -4,8 +4,9 @@ import io.github.daniil547.js_executor_rest.domain.LanguageTask;
 
 import java.util.UUID;
 
+@Deprecated(forRemoval = true)
 public class NotRestartedException extends RuntimeException {
     public NotRestartedException(UUID id, LanguageTask.Status status) {
-        super("To execute a task that is " + status + " you have to restart it first");
+        super("Restart support is dropped, please resubmit the task to rerun it");
     }
 }

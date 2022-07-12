@@ -2,7 +2,6 @@ package io.github.daniil547.js_executor_rest.domain;
 
 import io.github.daniil547.js_executor_rest.exceptions.DoubleStartException;
 import io.github.daniil547.js_executor_rest.exceptions.DoubleStopException;
-import io.github.daniil547.js_executor_rest.exceptions.IllegalRestartException;
 import io.github.daniil547.js_executor_rest.exceptions.NotRestartedException;
 import org.graalvm.polyglot.*;
 
@@ -242,25 +241,6 @@ public class IsolatedJsTask implements LanguageTask {
             switch (currentStatus) {
                 case SCHEDULED, RUNNING -> this.currentStatus = Status.CANCELED;
                 case FINISHED, CANCELED -> throw new DoubleStopException(this.id, currentStatus);
-            }
-        }
-    }
-
-    /**
-     * Restarts the task. Actual effect is up to implementation.
-     * <p>
-     * This implementation is meant to be managed by an external
-     * executor, so it only changes the {@link #currentStatus} to
-     * {@link Status#SCHEDULED}.
-     */
-    @Override
-    public void restart() {
-        synchronized (lock) {
-            switch (currentStatus) {
-                case CANCELED, FINISHED -> {
-                    this.currentStatus = Status.SCHEDULED;
-                }
-                case RUNNING, SCHEDULED -> throw new IllegalRestartException(this.id, currentStatus);
             }
         }
     }

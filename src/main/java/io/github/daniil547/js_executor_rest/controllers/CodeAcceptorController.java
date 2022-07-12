@@ -23,8 +23,6 @@ import java.util.UUID;
  * execution.
  * <p>
  * Has CRUD functionality.
- * TODO: add support for changing tasks (source, input, output etc.) prior to restarting.
- * (Currently only "update" actions are cancelling and restarting execution)
  */
 @RestController
 @RequestMapping("/execution/")
@@ -106,12 +104,6 @@ public class CodeAcceptorController {
     @PutMapping("{id}/cancel")
     public ResponseEntity<?> cancelTask(@PathVariable UUID id) {
         taskDispatcher.cancelExecution(id);
-        return ResponseEntity.ok().build();
-    }
-
-    @PutMapping("{id}/restart")
-    public ResponseEntity<?> restartTask(@PathVariable UUID id) {
-        taskDispatcher.restartExecution(id);
         return ResponseEntity.ok().build();
     }
 
