@@ -33,17 +33,22 @@ public class DefaultTaskDispatcher implements TaskDispatcher {
 
     @Override
     public void addForExecution(LanguageTask task) {
-        taskRegister.put(task.getId(), task);
+        synchronized (task) {
+            if (task.getStatus() == LanguageTask.Status.SCHEDULED) {
+                taskRegister.put(task.getId(), task);
 
-        futureRegister.put(task.getId(), threadPool.submit(task::execute));
+                futureRegister.put(task.getId(), threadPool.submit(task::execute));
+            }
+        }
     }
 
     @Override
     public void cancelExecution(UUID id) {
-        synchronized (getTask(id)) {
-            getTask(id).cancel();
-            futureRegister.get(id).cancel(true);
-            futureRegister.remove(id);
+        LanguageTask task;
+        // getTask() throws if already removed
+        synchronized (task = getTask(id)) {
+            // and this checks if already cancelled
+            doCancel(task);
         }
     }
 
@@ -56,9 +61,23 @@ public class DefaultTaskDispatcher implements TaskDispatcher {
      */
     @Override
     public void removeTask(UUID id) {
-        synchronized (getTask(id)) {
-            this.cancelExecution(id);
+        LanguageTask task;
+        // getTask() throws if already removed
+        synchronized (task = getTask(id)) {
+            doCancel(task);
             taskRegister.remove(id);
+        }
+    }
+
+    private void doCancel(LanguageTask task) {
+        LanguageTask.Status status = task.getStatus();
+        if (status == LanguageTask.Status.SCHEDULED
+            || status == LanguageTask.Status.RUNNING) {
+            task.cancel();
+            UUID id = task.getId();
+            // gets a future, not the task
+            futureRegister.get(id).cancel(true);
+            futureRegister.remove(id);
         }
     }
 
