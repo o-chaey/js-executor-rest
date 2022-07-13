@@ -3,10 +3,10 @@ package io.github.daniil547.js_executor_rest.controllers;
 import io.github.daniil547.js_executor_rest.domain.IsolatedJsTask;
 import io.github.daniil547.js_executor_rest.domain.LanguageTask;
 import io.github.daniil547.js_executor_rest.dtos.NoInputTaskDto;
+import io.github.daniil547.js_executor_rest.dtos.PatchTaskDto;
 import io.github.daniil547.js_executor_rest.services.TaskDispatcher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -80,10 +80,17 @@ public class CodeAcceptorController {
 
     }
 
-    @PutMapping("{id}/cancel")
-    public ResponseEntity<?> cancelTask(@PathVariable UUID id) {
-        taskDispatcher.cancelExecution(id);
-        return ResponseEntity.ok().build();
+    @PatchMapping("{id}")
+    public ResponseEntity<?> cancelTask(@PathVariable UUID id,
+                                        @RequestBody PatchTaskDto patch) {
+        if (patch.status() == LanguageTask.Status.CANCELED) {
+            taskDispatcher.cancelExecution(id);
+            return ResponseEntity.ok().build();
+        } else {
+            return ResponseEntity.badRequest()
+                                 .body(Map.of("message",
+                                              "You can change script's state only by canceling it"));
+        }
     }
 
     @DeleteMapping("{id}")
