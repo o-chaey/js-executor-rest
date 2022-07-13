@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.util.List;
 import java.util.Map;
@@ -67,7 +68,16 @@ public class CodeAcceptorController {
         IsolatedJsTask newTask = new IsolatedJsTask(dto.source(), statementLimit);
         taskDispatcher.addForExecution(newTask);
 
-        return new ResponseEntity<>(newTask.getId().toString(), HttpStatus.CREATED);
+        ResponseEntity.BodyBuilder responseBuilder = ResponseEntity.created(
+                ServletUriComponentsBuilder.fromCurrentRequest()
+                                           .path("/{id}")
+                                           .buildAndExpand(newTask.getId()
+                                                                  .toString())
+                                           .toUri()
+        );
+        // .build is called separately, otherwise Intellij messes up formatting
+        return responseBuilder.build();
+
     }
 
     @PutMapping("{id}/cancel")
