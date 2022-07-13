@@ -1,11 +1,12 @@
 package io.github.daniil547.js_executor_rest.domain;
 
-import io.github.daniil547.js_executor_rest.exceptions.DoubleStartException;
-import io.github.daniil547.js_executor_rest.exceptions.DoubleStopException;
-import io.github.daniil547.js_executor_rest.exceptions.NotRestartedException;
+import io.github.daniil547.js_executor_rest.exceptions.ScriptStateConflictException;
 import org.graalvm.polyglot.*;
 
-import java.io.*;
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -157,8 +158,12 @@ public class IsolatedJsTask implements LanguageTask {
         synchronized (lock) {
             switch (currentStatus) {
                 case SCHEDULED -> currentStatus = Status.RUNNING;
-                case RUNNING -> throw new DoubleStartException(this.id);
-                case FINISHED, CANCELED -> throw new NotRestartedException(this.id, currentStatus);
+                case RUNNING -> throw new ScriptStateConflictException(
+                        "Task " + this.id + " is already " + LanguageTask.Status.RUNNING
+                );
+                case FINISHED, CANCELED -> throw new ScriptStateConflictException(
+                        "Script " + this.id + "can't be executed as it is " + currentStatus + ". Scripts can't be restarted."
+                );
             }
         }
 
@@ -202,7 +207,8 @@ public class IsolatedJsTask implements LanguageTask {
         synchronized (lock) {
             switch (currentStatus) {
                 case SCHEDULED, RUNNING -> this.currentStatus = Status.CANCELED;
-                case FINISHED, CANCELED -> throw new DoubleStopException(this.id, currentStatus);
+                case FINISHED, CANCELED -> throw new ScriptStateConflictException(
+                        "Task " + this.id + " is already " + currentStatus);
             }
         }
     }
