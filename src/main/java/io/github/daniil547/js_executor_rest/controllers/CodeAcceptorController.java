@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +25,8 @@ import java.util.UUID;
  * <p>
  * Has CRUD functionality.
  */
+
+@Tag(name = "JS Executor", description = "Service for remote execution of JS code")
 @RestController
 @RequestMapping("/execution/")
 public class CodeAcceptorController {
@@ -38,6 +41,8 @@ public class CodeAcceptorController {
         this.statementLimit = statementLimit;
     }
 
+    @Operation(summary = "get all available info about all the tasks (except deleted)",
+               operationId = "get all")
     @GetMapping
     public ResponseEntity<List<Map<String, String>>> getAllTasksInfo() {
         return ResponseEntity.ok(taskDispatcher.getAllTasks()
@@ -46,36 +51,46 @@ public class CodeAcceptorController {
                                                .toList());
     }
 
+    @Operation(summary = "get all available info about the task",
+               operationId = "get")
     @GetMapping("{id}/")
     public ResponseEntity<Map<String, String>> getTaskInfo(@PathVariable UUID id) {
         return ResponseEntity.ok(taskDispatcher.getTask(id).getInfo());
     }
 
+    @Operation(summary = "get source code of the task, as was submitted",
+               operationId = "get source")
     @GetMapping("{id}/source")
     public ResponseEntity<String> getTaskSource(@PathVariable UUID id) {
         return ResponseEntity.ok(taskDispatcher.getTask(id).getSource());
     }
 
+    @Operation(summary = "get current or previous status of the task",
+               operationId = "get status")
     @GetMapping("{id}/status")
     public ResponseEntity<LanguageTask.Status> getTaskStatus(@PathVariable UUID id) {
         return ResponseEntity.ok(taskDispatcher.getTask(id).getStatus());
     }
 
+    @Operation(summary = "retrieve output produced by the task up to some \"recent\" moment in the past",
+               operationId = "get output")
     @GetMapping("{id}/output")
     public ResponseEntity<String> getTaskOutput(@PathVariable UUID id) {
         return ResponseEntity.ok(taskDispatcher.getTask(id).getOutputSoFar());
     }
 
     @PostMapping(headers = "Accept=text/plain")
-    @Operation( // that's Java's lack of import aliases for you
+    @Operation(
+            summary = "create a task by sending source as plain text",
+            operationId = "create",
+            // that's Java's lack of import aliases for you
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     content = @Content(
                             schema = @Schema(type = "string"),
                             mediaType = "text/plain",
                             examples = {@ExampleObject("console.log(\"Hello, World!\");")}
                     )
-            )
-    )
+            ))
     public ResponseEntity<String> submitTaskNoInput(@RequestBody String source) {
         IsolatedJsTask newTask = new IsolatedJsTask(source, statementLimit);
         taskDispatcher.addForExecution(newTask);
@@ -92,6 +107,8 @@ public class CodeAcceptorController {
 
     }
 
+    @Operation(summary = "edit existing task (currently only cancel)",
+               operationId = "update")
     @PatchMapping("{id}")
     public ResponseEntity<?> cancelTask(@PathVariable UUID id,
                                         @RequestBody PatchTaskDto patch) {
@@ -105,6 +122,8 @@ public class CodeAcceptorController {
         }
     }
 
+    @Operation(summary = "delete a task",
+               operationId = "delete")
     @DeleteMapping("{id}")
     public ResponseEntity<?> removeTask(@PathVariable UUID id) {
         taskDispatcher.removeTask(id);
