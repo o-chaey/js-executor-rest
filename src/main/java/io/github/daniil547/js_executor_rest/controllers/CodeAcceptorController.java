@@ -2,9 +2,12 @@ package io.github.daniil547.js_executor_rest.controllers;
 
 import io.github.daniil547.js_executor_rest.domain.IsolatedJsTask;
 import io.github.daniil547.js_executor_rest.domain.LanguageTask;
-import io.github.daniil547.js_executor_rest.dtos.NoInputTaskDto;
 import io.github.daniil547.js_executor_rest.dtos.PatchTaskDto;
 import io.github.daniil547.js_executor_rest.services.TaskDispatcher;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -63,9 +66,18 @@ public class CodeAcceptorController {
         return ResponseEntity.ok(taskDispatcher.getTask(id).getOutputSoFar());
     }
 
-    @PostMapping()
-    public ResponseEntity<String> submitTaskNoInput(@RequestBody NoInputTaskDto dto) {
-        IsolatedJsTask newTask = new IsolatedJsTask(dto.source(), statementLimit);
+    @PostMapping(headers = "Accept=text/plain")
+    @Operation( // that's Java's lack of import aliases for you
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    content = @Content(
+                            schema = @Schema(type = "string"),
+                            mediaType = "text/plain",
+                            examples = {@ExampleObject("console.log(\"Hello, World!\");")}
+                    )
+            )
+    )
+    public ResponseEntity<String> submitTaskNoInput(@RequestBody String source) {
+        IsolatedJsTask newTask = new IsolatedJsTask(source, statementLimit);
         taskDispatcher.addForExecution(newTask);
 
         ResponseEntity.BodyBuilder responseBuilder = ResponseEntity.created(
