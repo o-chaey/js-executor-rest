@@ -45,7 +45,7 @@ public class IsolatedJsTask implements LanguageTask {
     private final String sourceCode;
     private Status currentStatus;
     private final ByteArrayOutputStream out;
-    private String errors;
+    private String errors = "";
     private final UUID id;
     private final Object lock = new Object();
 
