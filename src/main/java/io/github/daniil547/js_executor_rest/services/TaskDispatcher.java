@@ -1,6 +1,7 @@
 package io.github.daniil547.js_executor_rest.services;
 
 import io.github.daniil547.js_executor_rest.domain.LanguageTask;
+import io.github.daniil547.js_executor_rest.dtos.TaskView;
 
 import java.util.Collection;
 import java.util.UUID;
@@ -37,10 +38,10 @@ public interface TaskDispatcher {
      * @param id of the task to fetch
      * @return the task with the given ID
      */
-    LanguageTask getTask(UUID id);
+    TaskView getTask(UUID id);
 
     /**
      * @return all tasks managed by this dispatcher
      */
-    Collection<LanguageTask> getAllTasks();
+    Collection<TaskView> getAllTasks();
 }

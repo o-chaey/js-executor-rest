@@ -1,6 +1,5 @@
 package io.github.daniil547.js_executor_rest.domain;
 
-import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -42,18 +41,6 @@ public interface LanguageTask {
          */
         FINISHED;
     }
-
-    /**
-     * Any info about the task that user might want to know
-     * (and is allowed to be disclosed).
-     * <p>
-     * Generally, should combine output of {@link #getId()},
-     * {@link #getSource()}, {@link #getStatus()},
-     * {@link #getOutputSoFar()}.
-     *
-     * @return all relative info describing the task
-     */
-    Map<String, String> getInfo();
 
 
     /**

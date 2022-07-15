@@ -1,7 +1,9 @@
 package io.github.daniil547.js_executor_rest.services;
 
 import io.github.daniil547.js_executor_rest.domain.LanguageTask;
+import io.github.daniil547.js_executor_rest.dtos.TaskView;
 import io.github.daniil547.js_executor_rest.exceptions.TaskNotFoundException;
+import io.github.daniil547.js_executor_rest.mappers.TaskToViewMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -24,9 +26,13 @@ public class DefaultTaskDispatcher implements TaskDispatcher {
     private final Map<UUID, LanguageTask> taskRegister;
     private final Map<UUID, Future<?>> futureRegister;
 
+    private final TaskToViewMapper ttvMapper;
+
     @Autowired
-    public DefaultTaskDispatcher(ExecutorService threadPool) {
+    public DefaultTaskDispatcher(ExecutorService threadPool,
+                                 TaskToViewMapper ttvMapper) {
         this.threadPool = threadPool;
+        this.ttvMapper = ttvMapper;
         this.taskRegister = new ConcurrentHashMap<>();
         this.futureRegister = new ConcurrentHashMap<>();
     }
@@ -46,7 +52,7 @@ public class DefaultTaskDispatcher implements TaskDispatcher {
     public void cancelExecution(UUID id) {
         LanguageTask task;
         // getTask() throws if already removed
-        synchronized (task = getTask(id)) {
+        synchronized (task = getTaskInternal(id)) {
             // and this checks if already cancelled
             doCancel(task);
         }
@@ -63,7 +69,7 @@ public class DefaultTaskDispatcher implements TaskDispatcher {
     public void removeTask(UUID id) {
         LanguageTask task;
         // getTask() throws if already removed
-        synchronized (task = getTask(id)) {
+        synchronized (task = getTaskInternal(id)) {
             doCancel(task);
             taskRegister.remove(id);
         }
@@ -81,15 +87,8 @@ public class DefaultTaskDispatcher implements TaskDispatcher {
         }
     }
 
-    /**
-     * TODO: Better be reimplemented to return a read-only view of the task
-     * TODO: And this impl made internal-only
-     *
-     * @param id of the task to fetch
-     * @return the task with the given ID; !must not be mutated!
-     */
-    @Override
-    public LanguageTask getTask(UUID id) {
+
+    private LanguageTask getTaskInternal(UUID id) {
         LanguageTask languageTask = taskRegister.get(id);
         if (languageTask == null) {
             throw new TaskNotFoundException(id);
@@ -97,13 +96,28 @@ public class DefaultTaskDispatcher implements TaskDispatcher {
         return languageTask;
     }
 
+
     /**
-     * TODO: Better be reimplemented to return a read-only views of tasks
+     * Returns a read-only view of the task as {@link TaskView}
+     *
+     * @param id of the task to fetch
+     * @return the task with the given ID; !must not be mutated!
+     */
+    @Override
+    public TaskView getTask(UUID id) {
+        return ttvMapper.taskToView(getTaskInternal(id));
+    }
+
+    /**
+     * Returns a read-only view of all the tasks as {@link TaskView}s
      *
      * @return all tasks managed by this dispatcher
      */
     @Override
-    public Collection<LanguageTask> getAllTasks() {
-        return taskRegister.values();
+    public Collection<TaskView> getAllTasks() {
+        return taskRegister.values()
+                           .stream()
+                           .map(ttvMapper::taskToView)
+                           .toList();
     }
 }

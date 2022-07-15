@@ -8,8 +8,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.UUID;
 import java.util.stream.StreamSupport;
 
@@ -89,29 +87,6 @@ public class IsolatedJsTask implements LanguageTask {
         this.sourceCode = sourceCode;
         currentStatus = Status.SCHEDULED;
         id = UUID.randomUUID();
-    }
-
-    /**
-     * Returns combined output of {@link #getId()},
-     * {@link #getSource()}, {@link #getStatus()},
-     * {@link #getOutputSoFar()}.
-     *
-     * @return info describing the task
-     */
-    @Override
-    public Map<String, String> getInfo() {
-        // to maintain insertion order (for nicer output to the user)
-        // might be replaced with something like List<Pair<String, String>>
-        // but it requires a Pair class (3rd-party dep or handwritten)
-        // and might not be autoconverted to JSON
-        Map<String, String> info = new LinkedHashMap<>();
-        Status status = getStatus();
-
-        info.put("id", getId().toString());
-        info.put("status", status.toString());
-        info.put("outputSoFar", getOutputSoFar());
-
-        return info;
     }
 
 

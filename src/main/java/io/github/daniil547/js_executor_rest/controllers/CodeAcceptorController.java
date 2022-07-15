@@ -3,6 +3,7 @@ package io.github.daniil547.js_executor_rest.controllers;
 import io.github.daniil547.js_executor_rest.domain.IsolatedJsTask;
 import io.github.daniil547.js_executor_rest.domain.LanguageTask;
 import io.github.daniil547.js_executor_rest.dtos.PatchTaskDto;
+import io.github.daniil547.js_executor_rest.dtos.TaskView;
 import io.github.daniil547.js_executor_rest.services.TaskDispatcher;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -15,7 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import java.util.List;
+import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 
@@ -44,39 +45,36 @@ public class CodeAcceptorController {
     @Operation(summary = "get all available info about all the tasks (except deleted)",
                operationId = "get all")
     @GetMapping
-    public ResponseEntity<List<Map<String, String>>> getAllTasksInfo() {
-        return ResponseEntity.ok(taskDispatcher.getAllTasks()
-                                               .stream()
-                                               .map(LanguageTask::getInfo)
-                                               .toList());
+    public ResponseEntity<Collection<TaskView>> getAllTasksInfo() {
+        return ResponseEntity.ok(taskDispatcher.getAllTasks());
     }
 
     @Operation(summary = "get all available info about the task",
                operationId = "get")
     @GetMapping("{id}/")
-    public ResponseEntity<Map<String, String>> getTaskInfo(@PathVariable UUID id) {
-        return ResponseEntity.ok(taskDispatcher.getTask(id).getInfo());
+    public ResponseEntity<TaskView> getTaskInfo(@PathVariable UUID id) {
+        return ResponseEntity.ok(taskDispatcher.getTask(id));
     }
 
     @Operation(summary = "get source code of the task, as was submitted",
                operationId = "get source")
     @GetMapping("{id}/source")
     public ResponseEntity<String> getTaskSource(@PathVariable UUID id) {
-        return ResponseEntity.ok(taskDispatcher.getTask(id).getSource());
+        return ResponseEntity.ok(taskDispatcher.getTask(id).source());
     }
 
     @Operation(summary = "get current or previous status of the task",
                operationId = "get status")
     @GetMapping("{id}/status")
     public ResponseEntity<LanguageTask.Status> getTaskStatus(@PathVariable UUID id) {
-        return ResponseEntity.ok(taskDispatcher.getTask(id).getStatus());
+        return ResponseEntity.ok(taskDispatcher.getTask(id).status());
     }
 
     @Operation(summary = "retrieve output produced by the task up to some \"recent\" moment in the past",
                operationId = "get output")
     @GetMapping("{id}/output")
     public ResponseEntity<String> getTaskOutput(@PathVariable UUID id) {
-        return ResponseEntity.ok(taskDispatcher.getTask(id).getOutputSoFar());
+        return ResponseEntity.ok(taskDispatcher.getTask(id).output());
     }
 
     @PostMapping(headers = "Accept=text/plain")
