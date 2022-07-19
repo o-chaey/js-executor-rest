@@ -2,9 +2,11 @@ package io.github.daniil547.js_executor_rest.services;
 
 import io.github.daniil547.js_executor_rest.domain.LanguageTask;
 import io.github.daniil547.js_executor_rest.dtos.TaskView;
+import org.springframework.data.domain.Pageable;
 
-import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
+import java.util.function.Predicate;
 
 /**
  * An external executor for {@link LanguageTask}s.
@@ -43,5 +45,7 @@ public interface TaskDispatcher {
     /**
      * @return all tasks managed by this dispatcher
      */
-    Collection<TaskView> getAllTasks();
+    List<TaskView> getAllTasks(Predicate<LanguageTask> filter, Pageable paging);
+
+    long getTaskCount();
 }

@@ -1,9 +1,12 @@
 package io.github.daniil547.js_executor_rest.controllers;
 
+import cz.jirutka.rsql.parser.RSQLParser;
+import cz.jirutka.rsql.parser.ast.Node;
 import io.github.daniil547.js_executor_rest.domain.IsolatedJsTask;
 import io.github.daniil547.js_executor_rest.domain.LanguageTask;
 import io.github.daniil547.js_executor_rest.dtos.PatchTaskDto;
 import io.github.daniil547.js_executor_rest.dtos.TaskView;
+import io.github.daniil547.js_executor_rest.services.RsqlToPredicateVisitor;
 import io.github.daniil547.js_executor_rest.services.TaskDispatcher;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -12,13 +15,17 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Predicate;
 
 /**
  * Controller that accepts requests for remote script
@@ -33,20 +40,37 @@ import java.util.UUID;
 public class CodeAcceptorController {
     private final TaskDispatcher taskDispatcher;
     private final Long statementLimit;
+    private final RSQLParser rsqlParser;
+    private final RsqlToPredicateVisitor<LanguageTask> rsqlToPredicateVisitor;
 
     @Autowired
     public CodeAcceptorController(TaskDispatcher taskDispatcher,
-                                  @Value("${task-execution.statement-limit}")
-                                  Long statementLimit) {
+                                  RSQLParser rsqlParser,
+                                  @Value("${task-execution.statement-limit}") Long statementLimit) {
         this.taskDispatcher = taskDispatcher;
         this.statementLimit = statementLimit;
+        this.rsqlParser = rsqlParser;
+        rsqlToPredicateVisitor = new RsqlToPredicateVisitor<>(LanguageTask.class);
     }
 
     @Operation(summary = "get all available info about all the tasks (except deleted)",
                operationId = "get all")
     @GetMapping
-    public ResponseEntity<Collection<TaskView>> getAllTasksInfo() {
-        return ResponseEntity.ok(taskDispatcher.getAllTasks());
+    public ResponseEntity<Page<TaskView>> getAllTasksInfo(
+            @RequestParam(required = false, name = "query") String query,
+            Pageable paging
+    ) {
+        System.out.println(query);
+        System.out.println(paging);
+        Predicate<LanguageTask> filter = null;
+        if (query != null && !query.isBlank()) {
+            Node rootNode = rsqlParser.parse(query);
+            filter = rootNode.accept(rsqlToPredicateVisitor);
+        }
+        List<TaskView> queryResult = taskDispatcher.getAllTasks(filter, paging);
+        return ResponseEntity.ok(new PageImpl<>(queryResult,
+                                                paging,
+                                                taskDispatcher.getTaskCount()));
     }
 
     @Operation(summary = "get all available info about the task",

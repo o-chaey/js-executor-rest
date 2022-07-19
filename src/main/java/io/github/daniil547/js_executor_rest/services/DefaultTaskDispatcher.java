@@ -4,15 +4,21 @@ import io.github.daniil547.js_executor_rest.domain.LanguageTask;
 import io.github.daniil547.js_executor_rest.dtos.TaskView;
 import io.github.daniil547.js_executor_rest.exceptions.TaskNotFoundException;
 import io.github.daniil547.js_executor_rest.mappers.TaskToViewMapper;
+import io.github.daniil547.js_executor_rest.util.ReflectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
-import java.util.Collection;
-import java.util.Map;
-import java.util.UUID;
+import java.lang.reflect.Method;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 /**
  * An external executor for {@link LanguageTask}s. <br>
@@ -114,10 +120,51 @@ public class DefaultTaskDispatcher implements TaskDispatcher {
      * @return all tasks managed by this dispatcher
      */
     @Override
-    public Collection<TaskView> getAllTasks() {
-        return taskRegister.values()
-                           .stream()
-                           .map(ttvMapper::taskToView)
-                           .toList();
+    public List<TaskView> getAllTasks(Predicate<LanguageTask> filter, Pageable paging) {
+        // it starts looking ugly when you add stream operations conditionally
+        Stream<LanguageTask> stream1 = taskRegister.values()
+                                                   .stream();
+        if (filter != null) {
+            stream1 = stream1.filter(filter);
+        }
+        Stream<TaskView> stream2 = stream1.map(ttvMapper::taskToView);
+        Comparator<TaskView> sorting = sortToComparator(paging.getSort());
+        if (sorting != null) {
+            stream2 = stream2.sorted(sorting);
+        }
+        return stream2.skip(paging.getOffset())
+                      .limit(paging.getPageSize())
+                      .toList();
+    }
+
+    @Override
+    public long getTaskCount() {
+        return this.taskRegister.size();
+    }
+
+    @Nullable
+    private Comparator<TaskView> sortToComparator(Sort sort) {
+        Optional<Comparator<TaskView>> taskViewComparator =
+                // sort is a collection of orders
+                sort.stream()
+                    // order is a singular sort clause
+                    .map(order -> {
+                        Method getter = ReflectionUtils.getDeclaredMethodOrThrow(TaskView.class, order.getProperty());
+
+                        Function<TaskView, Comparable<Object>> keyExtractor =
+                                task -> (Comparable<Object>) ReflectionUtils.invokeOrThrow(getter, task);
+                        Comparator<Comparable<Object>> propertyCmp = switch (order.getDirection()) {
+                            case ASC -> Comparator.naturalOrder();
+                            case DESC -> Comparator.reverseOrder();
+                        };
+                        propertyCmp = switch (order.getNullHandling()) {
+                            case NULLS_FIRST -> Comparator.nullsFirst(propertyCmp);
+                            case NATIVE, NULLS_LAST -> Comparator.nullsLast(
+                                    propertyCmp);
+                        };
+                        return Comparator.comparing(keyExtractor, propertyCmp);
+                    })
+                    .reduce(Comparator::thenComparing);
+        return taskViewComparator.orElse(null);
     }
 }

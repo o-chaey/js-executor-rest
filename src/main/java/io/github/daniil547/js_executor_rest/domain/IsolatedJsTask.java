@@ -109,7 +109,7 @@ public class IsolatedJsTask implements LanguageTask {
     }
 
     @Override
-    public String getOutputSoFar() {
+    public String getOutput() {
         return out.toString(StandardCharsets.UTF_8) + errors;
     }
 

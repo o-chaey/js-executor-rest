@@ -76,7 +76,7 @@ public interface LanguageTask {
      *
      * @return standard out output of the script
      */
-    String getOutputSoFar();
+    String getOutput();
 
     /**
      * Executes the task.
