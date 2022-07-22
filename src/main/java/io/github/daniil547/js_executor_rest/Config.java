@@ -2,6 +2,7 @@ package io.github.daniil547.js_executor_rest;
 
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import cz.jirutka.rsql.parser.RSQLParser;
 import org.springframework.beans.factory.annotation.Value;
@@ -35,7 +36,9 @@ public class Config implements WebMvcConfigurer {
     public ObjectMapper objectMapper() {
         return JsonMapper.builder()
                          .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
-                         .build();
+                         .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+                         .build()
+                         .findAndRegisterModules();
     }
 
     @Override

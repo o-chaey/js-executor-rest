@@ -7,7 +7,12 @@ import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.management.ThreadMXBean;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.time.ZonedDateTime;
+import java.time.temporal.Temporal;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.StreamSupport;
 
@@ -40,18 +45,23 @@ import java.util.stream.StreamSupport;
 public class IsolatedJsTask implements LanguageTask {
     public static final String LANG = "js";
     private final Context polyglotContext;
+    private final UUID id;
     private final String sourceCode;
     private Status currentStatus;
     private final ByteArrayOutputStream out;
     private String errors = "";
-    private final UUID id;
+
+    private Optional<ZonedDateTime> startTime;
+    private Optional<Duration> duration;
+    private Optional<ZonedDateTime> endTime;
+
     private final Object lock = new Object();
 
     /**
      * One and only constructor.
      *
-     * @param sourceCode     - JavaScript code to be executed
-     * @param statementLimit - maximum number of statements allowed to be executed by this task
+     * @param sourceCode     JavaScript code to be executed
+     * @param statementLimit maximum number of statements allowed to be executed by this task
      */
     public IsolatedJsTask(String sourceCode, long statementLimit) {
         this.out = new ByteArrayOutputStream();
@@ -82,7 +92,9 @@ public class IsolatedJsTask implements LanguageTask {
                                                                // this is for other actions
                                                                .onLimit((s) -> this.cancel())
                                                                .build());
-
+        this.startTime = Optional.empty();
+        this.duration = Optional.empty();
+        this.endTime = Optional.empty();
         this.polyglotContext = builder.build();
         this.sourceCode = sourceCode;
         currentStatus = Status.SCHEDULED;
@@ -113,6 +125,44 @@ public class IsolatedJsTask implements LanguageTask {
         return out.toString(StandardCharsets.UTF_8) + errors;
     }
 
+    @Override
+    public Optional<ZonedDateTime> getStartTime() {
+        return startTime;
+    }
+
+    /**
+     * Duration is implemented naively: as
+     * {@link Duration#between(Temporal, Temporal) Duration.between(startTime, endTime)}
+     * This doesn't account for a lot of stuff, like blocking, waiting,
+     * logical cores being used for other computation etc.<br>
+     * It would be better solved by measuring CPU time used by a specific task.<br>
+     * However, standard tools ({@link ThreadMXBean#getThreadCpuTime(long)}) only
+     * support measuring CPU time allocated to a <b>thread</b>, which would be
+     * useless for our case, since we are using a thread pool.<br>
+     * GraalVM, though, measures CPU time per polyglot context, but it is
+     * available only in GraalVM Enterprise and is an experimental feature.
+     * <p>
+     * So, naive approach seems to be a good tradeoff between effect (precision) and complexity.
+     *
+     * @return
+     */
+    @Override
+    public Optional<Duration> getDuration() {
+        synchronized (lock) {
+            if (currentStatus == Status.RUNNING) {
+                return startTime.map(
+                        zonedDateTime -> Duration.between(zonedDateTime, ZonedDateTime.now())
+                );
+            } else {
+                return duration;
+            }
+        }
+    }
+
+    @Override
+    public Optional<ZonedDateTime> getEndTime() {
+        return endTime;
+    }
 
     /**
      * Executes the task.
@@ -132,7 +182,10 @@ public class IsolatedJsTask implements LanguageTask {
     public void execute() {
         synchronized (lock) {
             switch (currentStatus) {
-                case SCHEDULED -> currentStatus = Status.RUNNING;
+                case SCHEDULED -> {
+                    currentStatus = Status.RUNNING;
+                    startTime = Optional.of(ZonedDateTime.now());
+                }
                 case RUNNING -> throw new ScriptStateConflictException(
                         "Task " + this.id + " is already " + LanguageTask.Status.RUNNING
                 );
@@ -166,6 +219,7 @@ public class IsolatedJsTask implements LanguageTask {
             errors = errorAcumulator.toString();
         } finally {
             currentStatus = Status.FINISHED;
+            catchEndTime();
             polyglotContext.close();
         }
     }
@@ -181,10 +235,19 @@ public class IsolatedJsTask implements LanguageTask {
     public void cancel() {
         synchronized (lock) {
             switch (currentStatus) {
-                case SCHEDULED, RUNNING -> this.currentStatus = Status.CANCELED;
+                case SCHEDULED, RUNNING -> {
+                    this.currentStatus = Status.CANCELED;
+                    catchEndTime();
+                }
                 case FINISHED, CANCELED -> throw new ScriptStateConflictException(
                         "Task " + this.id + " is already " + currentStatus);
             }
         }
+    }
+
+    private void catchEndTime() {
+        endTime = Optional.of(ZonedDateTime.now());
+        duration = Optional.of(Duration.between(startTime.get(),
+                                                endTime.get()));
     }
 }

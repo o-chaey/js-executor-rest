@@ -1,5 +1,8 @@
 package io.github.daniil547.js_executor_rest.domain;
 
+import java.time.Duration;
+import java.time.ZonedDateTime;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -77,6 +80,44 @@ public interface LanguageTask {
      * @return standard out output of the script
      */
     String getOutput();
+
+    /**
+     * <ul>
+     *     <li>If the task is {@link Status#SCHEDULED} returns {@link Optional#empty()}.</li>
+     *     <li>Otherwise, returns time at which execution of the task has started as
+     *         {@link Optional#of(Object) Optional.of(ZonedDateTime)}</li>
+     * </ul>
+     *
+     * @return time at which execution of the task has started
+     */
+    Optional<ZonedDateTime> getStartTime();
+
+    /**
+     * <ul>
+     *     <li>If the task is {@link Status#SCHEDULED} returns {@link Optional#empty()}.</li>
+     *     <li>If the task is {@link Status#RUNNING} returns time elapsed between the start of
+     *         the task execution and current moment as T.</li>
+     *     <li>Otherwise returns time elapsed between the start of the task execution and the moment it
+     *         stopped (for any reason) as T.</li>
+     * </ul>
+     * where T is {@link Optional#of(Object) Optional.of(Duration)}
+     *
+     * @return time the task was being executed
+     */
+    Optional<Duration> getDuration();
+
+    /**
+     * <ul>
+     *     <li>If the task is {@link Status#FINISHED} or {@link Status#CANCELED}
+     *         returns the time at which the execution has ended (for any reason)
+     *         as {@link Optional#of(Object) Optional.of(ZonedDateTime)}</li>
+     *     <li>Otherwise returns {@link Optional#empty()}</li>
+     * </ul>
+     *
+     * @return time at which execution of the task has ended (for any reason)
+     */
+    Optional<ZonedDateTime> getEndTime();
+
 
     /**
      * Executes the task.
