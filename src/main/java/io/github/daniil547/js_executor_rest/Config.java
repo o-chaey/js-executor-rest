@@ -11,12 +11,16 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.convert.converter.ConverterFactory;
 import org.springframework.format.FormatterRegistry;
+import org.springframework.hateoas.config.EnableHypermediaSupport;
+import org.springframework.hateoas.support.WebStack;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 @Configuration
+@EnableHypermediaSupport(stacks = WebStack.WEBMVC,
+                         type = EnableHypermediaSupport.HypermediaType.HAL_FORMS)
 public class Config implements WebMvcConfigurer {
 
     @Value("${task-execution.parallelism}")
