@@ -7,21 +7,24 @@ public final class ReflectionUtils {
     private ReflectionUtils() {}
 
 
-    public static Object invokeOrThrow(Method meth, Object on, Object... withArgs) {
+    public static Object invokeGetter(Method meth, Object on, Object... withArgs) {
         try {
             return meth.invoke(on, withArgs);
         } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
+            throw new AssertionError("Getter illegal access wasn't accounted for", e);
         } catch (InvocationTargetException e) {
-            throw new RuntimeException(e);
+            throw new AssertionError("Getter throwing wasn't accounted for", e);
         }
     }
 
-    public static Method getDeclaredMethodOrThrow(Class<?> declaringClass, String methName, Class<?>... args) {
+    public static Method getDeclaredMethodOrThrow(RuntimeException toThrow,
+                                                  Class<?> declaringClass,
+                                                  String methName,
+                                                  Class<?>... args) {
         try {
             return declaringClass.getDeclaredMethod(methName, args);
         } catch (NoSuchMethodException e) {
-            throw new RuntimeException(e);
+            throw toThrow;
         }
     }
 }

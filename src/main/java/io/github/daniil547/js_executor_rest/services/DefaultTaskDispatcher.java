@@ -2,7 +2,8 @@ package io.github.daniil547.js_executor_rest.services;
 
 import io.github.daniil547.js_executor_rest.domain.LanguageTask;
 import io.github.daniil547.js_executor_rest.dtos.TaskView;
-import io.github.daniil547.js_executor_rest.exceptions.TaskNotFoundException;
+import io.github.daniil547.js_executor_rest.exceptions.PropertyNotFoundProblem;
+import io.github.daniil547.js_executor_rest.exceptions.TaskNotFoundProblem;
 import io.github.daniil547.js_executor_rest.mappers.TaskToViewMapper;
 import io.github.daniil547.js_executor_rest.util.ReflectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -82,22 +83,19 @@ public class DefaultTaskDispatcher implements TaskDispatcher {
     }
 
     private void doCancel(LanguageTask task) {
-        LanguageTask.Status status = task.getStatus();
-        if (status == LanguageTask.Status.SCHEDULED
-            || status == LanguageTask.Status.RUNNING) {
-            task.cancel();
-            UUID id = task.getId();
-            // gets a future, not the task
-            futureRegister.get(id).cancel(true);
-            futureRegister.remove(id);
-        }
+        task.cancel();
+        UUID id = task.getId();
+        // gets a future, not the task
+        futureRegister.get(id).cancel(true);
+        futureRegister.remove(id);
+
     }
 
 
     private LanguageTask getTaskInternal(UUID id) {
         LanguageTask languageTask = taskRegister.get(id);
         if (languageTask == null) {
-            throw new TaskNotFoundException(id);
+            throw new TaskNotFoundProblem(id);
         }
         return languageTask;
     }
@@ -149,10 +147,16 @@ public class DefaultTaskDispatcher implements TaskDispatcher {
                 sort.stream()
                     // order is a singular sort clause
                     .map(order -> {
-                        Method getter = ReflectionUtils.getDeclaredMethodOrThrow(TaskView.class, order.getProperty());
+                        Method getter = ReflectionUtils.getDeclaredMethodOrThrow(
+                                new PropertyNotFoundProblem(
+                                        "bad sort query",
+                                        "Task",
+                                        order.getProperty()
+                                ),
+                                TaskView.class, order.getProperty());
 
                         Function<TaskView, Comparable<Object>> keyExtractor =
-                                task -> (Comparable<Object>) ReflectionUtils.invokeOrThrow(getter, task);
+                                task -> (Comparable<Object>) ReflectionUtils.invokeGetter(getter, task);
                         Comparator<Comparable<Object>> propertyCmp = switch (order.getDirection()) {
                             case ASC -> Comparator.naturalOrder();
                             case DESC -> Comparator.reverseOrder();

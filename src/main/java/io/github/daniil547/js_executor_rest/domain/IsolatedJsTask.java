@@ -1,6 +1,6 @@
 package io.github.daniil547.js_executor_rest.domain;
 
-import io.github.daniil547.js_executor_rest.exceptions.ScriptStateConflictException;
+import io.github.daniil547.js_executor_rest.exceptions.ScriptStateConflictProblem;
 import org.graalvm.polyglot.*;
 
 import java.io.BufferedOutputStream;
@@ -44,6 +44,8 @@ import java.util.stream.StreamSupport;
  */
 public class IsolatedJsTask implements LanguageTask {
     public static final String LANG = "js";
+    public static final String EXECUTE = "start";
+    public static final String CANCEL = "cancel";
     private final Context polyglotContext;
     private final UUID id;
     private final String sourceCode;
@@ -189,11 +191,14 @@ public class IsolatedJsTask implements LanguageTask {
                     currentStatus = Status.RUNNING;
                     startTime = Optional.of(ZonedDateTime.now());
                 }
-                case RUNNING -> throw new ScriptStateConflictException(
-                        "Task " + this.id + " is already " + LanguageTask.Status.RUNNING
+                case RUNNING -> throw new ScriptStateConflictProblem(
+                        "Task " + this.id + " is already " + LanguageTask.Status.RUNNING.toString().toLowerCase(),
+                        this.id, this.currentStatus, EXECUTE
                 );
-                case FINISHED, CANCELED -> throw new ScriptStateConflictException(
-                        "Script " + this.id + "can't be executed as it is " + currentStatus + ". Scripts can't be restarted."
+                case FINISHED, CANCELED -> throw new ScriptStateConflictProblem(
+                        "Script " + this.id + "can't be executed as it is " + currentStatus.toString().toLowerCase()
+                        + ". Scripts can't be restarted.",
+                        this.id, this.currentStatus, EXECUTE
                 );
             }
         }
@@ -234,8 +239,10 @@ public class IsolatedJsTask implements LanguageTask {
                     this.currentStatus = Status.CANCELED;
                     catchEndTime();
                 }
-                case FINISHED, CANCELED -> throw new ScriptStateConflictException(
-                        "Task " + this.id + " is already " + currentStatus);
+                case FINISHED, CANCELED -> throw new ScriptStateConflictProblem(
+                        "Task " + this.id + " is already " + currentStatus.toString().toLowerCase() +
+                        ". Canceling it again will have no effect",
+                        this.id, this.currentStatus, CANCEL);
             }
         }
     }

@@ -1,6 +1,7 @@
 package io.github.daniil547.js_executor_rest.services;
 
 import cz.jirutka.rsql.parser.ast.*;
+import io.github.daniil547.js_executor_rest.exceptions.PropertyNotFoundProblem;
 import io.github.daniil547.js_executor_rest.util.ReflectionUtils;
 
 import java.lang.reflect.Method;
@@ -29,11 +30,18 @@ public class RsqlToPredicateVisitor<T> extends NoArgRSQLVisitorAdapter<Predicate
     @Override
     public Predicate<T> visit(ComparisonNode node) {
         String propertyName = node.getSelector();
+
+        String methName = "get" + Character.toUpperCase(propertyName.charAt(0))
+                          + propertyName.substring(1);
         Method getter = ReflectionUtils.getDeclaredMethodOrThrow(
-                type, "get" + Character.toUpperCase(propertyName.charAt(0))
-                      + propertyName.substring(1));
+                new PropertyNotFoundProblem(
+                        "bad RSQL filter query",
+                        "Task",
+                        propertyName
+                ),
+                type, methName);
         List<String> args = node.getArguments();
-        Function<T, String> fn = v -> ReflectionUtils.invokeOrThrow(getter, v).toString();
+        Function<T, String> fn = v -> ReflectionUtils.invokeGetter(getter, v).toString();
         Predicate<T> propertyPredicate = switch (node.getOperator().getSymbol()) {
             case "==" -> lt -> fn.apply(lt).equals(args.get(0));
             case "!=" -> lt -> !fn.apply(lt).equals(args.get(0));
@@ -43,7 +51,11 @@ public class RsqlToPredicateVisitor<T> extends NoArgRSQLVisitorAdapter<Predicate
             case "=ge=" -> lt -> fn.apply(lt).compareTo(args.get(0)) >= 0;
             case "=in=" -> lt -> args.contains(fn.apply(lt));
             case "=out=" -> lt -> !args.contains(fn.apply(lt));
-            default -> throw new IllegalStateException("Unknown comparison operator" + node.getOperator().getSymbol());
+            // this *should* only be reached if another operator was registered
+            // if this is not the case, RSQLParser should throw earlier
+            default -> throw new AssertionError(
+                    "A new comparison operator was registered, but wasn't handled"
+            );
         };
         return propertyPredicate;
     }
