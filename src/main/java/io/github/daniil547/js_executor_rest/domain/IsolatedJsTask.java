@@ -56,6 +56,7 @@ public class IsolatedJsTask implements LanguageTask {
     private Optional<ZonedDateTime> endTime;
 
     private final Object lock = new Object();
+    private final Source polyglotSource;
 
     /**
      * One and only constructor.
@@ -97,6 +98,8 @@ public class IsolatedJsTask implements LanguageTask {
         this.endTime = Optional.empty();
         this.polyglotContext = builder.build();
         this.sourceCode = sourceCode;
+        this.polyglotSource = makeSource();
+        polyglotContext.parse(polyglotSource);
         currentStatus = Status.SCHEDULED;
         id = UUID.randomUUID();
     }
@@ -196,19 +199,11 @@ public class IsolatedJsTask implements LanguageTask {
         }
 
         try {
-            polyglotContext.eval(
-                    // can it even fail if loaded from a string?
-                    // who knows... nothing in the docs
-                    // also we have a context per script, so having a particular name
-                    // for a script inside a context shouldn't matter
-                    Source.newBuilder(LANG, sourceCode, "Task")
-                          .build()
-            );
-        } catch (IOException e) {
-            throw new IllegalStateException(e);
-            // GraalJS doesn't write errors to its err, even though it is provided
-            // to the builder in the constructor above
-        } catch (PolyglotException e) {
+            polyglotContext.eval(polyglotSource);
+        }
+        // GraalJS doesn't write errors to its err, even though it is provided
+        // to the builder in the constructor above
+        catch (PolyglotException e) {
             StringBuilder errorAcumulator = new StringBuilder("");
             errorAcumulator.append(e.getMessage());
             StreamSupport.stream(e.getPolyglotStackTrace().spliterator(), false)
@@ -242,6 +237,20 @@ public class IsolatedJsTask implements LanguageTask {
                 case FINISHED, CANCELED -> throw new ScriptStateConflictException(
                         "Task " + this.id + " is already " + currentStatus);
             }
+        }
+    }
+
+    private Source makeSource() {
+        try {
+            return Source.newBuilder(LANG, sourceCode, "Task")
+                         // can it even fail if loaded from a string?
+                         // who knows... nothing in the docs
+                         // also we have a context per script, so having a particular name
+                         // for a script inside a context shouldn't matter
+                         .build();
+        } catch (IOException e) {
+            throw new AssertionError("Source.Builder.build() wasn't expected " +
+                                     "to fail when source is loaded from a string", e);
         }
     }
 
