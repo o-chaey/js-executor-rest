@@ -14,6 +14,7 @@ import java.time.ZonedDateTime;
 import java.time.temporal.Temporal;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.StreamSupport;
 
 /**
@@ -49,7 +50,7 @@ public class IsolatedJsTask implements LanguageTask {
     private final Context polyglotContext;
     private final UUID id;
     private final String sourceCode;
-    private Status currentStatus;
+    private AtomicReference<Status> currentStatus;
     private final ByteArrayOutputStream out;
     private String errors = "";
 
@@ -102,7 +103,7 @@ public class IsolatedJsTask implements LanguageTask {
         this.sourceCode = sourceCode;
         this.polyglotSource = makeSource();
         polyglotContext.parse(polyglotSource);
-        currentStatus = Status.SCHEDULED;
+        currentStatus = new AtomicReference<>(Status.SCHEDULED);
         id = UUID.randomUUID();
     }
 
@@ -122,7 +123,7 @@ public class IsolatedJsTask implements LanguageTask {
 
     @Override
     public Status getStatus() {
-        return currentStatus;
+        return currentStatus.getPlain();
     }
 
     @Override
@@ -153,14 +154,12 @@ public class IsolatedJsTask implements LanguageTask {
      */
     @Override
     public Optional<Duration> getDuration() {
-        synchronized (lock) {
-            if (currentStatus == Status.RUNNING) {
-                return startTime.map(
-                        zonedDateTime -> Duration.between(zonedDateTime, ZonedDateTime.now())
-                );
-            } else {
-                return duration;
-            }
+        if (currentStatus.compareAndSet(Status.RUNNING, Status.RUNNING)) {
+            return startTime.map(
+                    zonedDateTime -> Duration.between(zonedDateTime, ZonedDateTime.now())
+            );
+        } else {
+            return duration;
         }
     }
 
@@ -185,22 +184,14 @@ public class IsolatedJsTask implements LanguageTask {
      */
     @Override
     public void execute() {
-        synchronized (lock) {
-            switch (currentStatus) {
-                case SCHEDULED -> {
-                    currentStatus = Status.RUNNING;
-                    startTime = Optional.of(ZonedDateTime.now());
-                }
-                case RUNNING -> throw new ScriptStateConflictProblem(
-                        "Task " + this.id + " is already " + LanguageTask.Status.RUNNING.toString().toLowerCase(),
-                        this.id, this.currentStatus, EXECUTE
-                );
-                case FINISHED, CANCELED -> throw new ScriptStateConflictProblem(
-                        "Script " + this.id + "can't be executed as it is " + currentStatus.toString().toLowerCase()
-                        + ". Scripts can't be restarted.",
-                        this.id, this.currentStatus, EXECUTE
-                );
-            }
+        if (currentStatus.compareAndSet(Status.SCHEDULED, Status.RUNNING)) {
+            startTime = Optional.of(ZonedDateTime.now());
+        } else {
+            throw new ScriptStateConflictProblem(
+                    "Task " + this.id + " is " + currentStatus.getPlain().toString().toLowerCase()
+                    + ". Scripts can't be restarted.",
+                    this.id, this.currentStatus.getPlain(), EXECUTE
+            );
         }
 
         try {
@@ -218,7 +209,7 @@ public class IsolatedJsTask implements LanguageTask {
                          .forEach(obj -> errorAcumulator.append(obj).append("\n"));
             errors = errorAcumulator.toString();
         } finally {
-            currentStatus = Status.FINISHED;
+            currentStatus.set(Status.FINISHED);
             catchEndTime();
             polyglotContext.close();
         }
@@ -233,17 +224,14 @@ public class IsolatedJsTask implements LanguageTask {
      */
     @Override
     public void cancel() {
-        synchronized (lock) {
-            switch (currentStatus) {
-                case SCHEDULED, RUNNING -> {
-                    this.currentStatus = Status.CANCELED;
-                    catchEndTime();
-                }
-                case FINISHED, CANCELED -> throw new ScriptStateConflictProblem(
-                        "Task " + this.id + " is already " + currentStatus.toString().toLowerCase() +
-                        ". Canceling it again will have no effect",
-                        this.id, this.currentStatus, CANCEL);
-            }
+        if (currentStatus.compareAndSet(Status.SCHEDULED, Status.CANCELED)
+            || currentStatus.compareAndSet(Status.RUNNING, Status.CANCELED)) {
+            catchEndTime();
+        } else {
+            throw new ScriptStateConflictProblem(
+                    "Task " + this.id + " is already " + currentStatus.toString().toLowerCase() +
+                    ". Canceling it again will have no effect",
+                    this.id, this.currentStatus.getPlain(), CANCEL);
         }
     }
 
