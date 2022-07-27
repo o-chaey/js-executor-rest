@@ -3,6 +3,7 @@ package io.github.daniil547.js_executor_rest.services;
 import io.github.daniil547.js_executor_rest.domain.LanguageTask;
 import io.github.daniil547.js_executor_rest.dtos.TaskView;
 import io.github.daniil547.js_executor_rest.exceptions.PropertyNotFoundProblem;
+import io.github.daniil547.js_executor_rest.exceptions.ScriptStateConflictProblem;
 import io.github.daniil547.js_executor_rest.exceptions.TaskNotFoundProblem;
 import io.github.daniil547.js_executor_rest.mappers.TaskToViewMapper;
 import io.github.daniil547.js_executor_rest.util.ReflectionUtils;
@@ -77,8 +78,15 @@ public class DefaultTaskDispatcher implements TaskDispatcher {
         LanguageTask task;
         // getTask() throws if already removed
         synchronized (task = getTaskInternal(id)) {
-            doCancel(task);
-            taskRegister.remove(id);
+            LanguageTask.Status status = task.getStatus();
+            if (status == LanguageTask.Status.SCHEDULED
+                || status == LanguageTask.Status.RUNNING) {
+                throw new ScriptStateConflictProblem("You cannot delete a task that didn't stop executing." +
+                                                     " If that is what you want, please cancel it first.",
+                                                     id, status, "delete");
+            } else {
+                taskRegister.remove(id);
+            }
         }
     }
 
@@ -88,7 +96,6 @@ public class DefaultTaskDispatcher implements TaskDispatcher {
         // gets a future, not the task
         futureRegister.get(id).cancel(true);
         futureRegister.remove(id);
-
     }
 
 
