@@ -1,7 +1,6 @@
 package io.github.daniil547.js_executor_rest.domain;
 
 import io.github.daniil547.js_executor_rest.exceptions.ScriptStateConflictProblem;
-import lombok.Builder;
 import org.graalvm.polyglot.*;
 import org.springframework.lang.Nullable;
 
@@ -42,7 +41,6 @@ import java.util.stream.StreamSupport;
  * by the user or executed {@code IsolatedJsTask(..., long statementLimit)}
  * statements.
  */
-@Builder
 public class IsolatedJsTask implements LanguageTask {
     public static final String LANG = "js";
     public static final String EXECUTE = "start";
