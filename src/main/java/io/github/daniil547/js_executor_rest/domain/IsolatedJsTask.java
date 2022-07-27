@@ -1,12 +1,11 @@
 package io.github.daniil547.js_executor_rest.domain;
 
 import io.github.daniil547.js_executor_rest.exceptions.ScriptStateConflictProblem;
+import lombok.Builder;
 import org.graalvm.polyglot.*;
+import org.springframework.lang.Nullable;
 
-import java.io.BufferedOutputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.lang.management.ThreadMXBean;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -43,6 +42,7 @@ import java.util.stream.StreamSupport;
  * by the user or executed {@code IsolatedJsTask(..., long statementLimit)}
  * statements.
  */
+@Builder
 public class IsolatedJsTask implements LanguageTask {
     public static final String LANG = "js";
     public static final String EXECUTE = "start";
@@ -62,18 +62,29 @@ public class IsolatedJsTask implements LanguageTask {
     private final Source polyglotSource;
 
     /**
-     * One and only constructor.
+     * Create {@link IsolatedJsTask} with a default output stream - ByteArrayOutputStream.
+     * Contents of which can be retrieved at any time via {@link IsolatedJsTask#getOutput()}.
      *
      * @param sourceCode     JavaScript code to be executed
      * @param statementLimit maximum number of statements allowed to be executed by this task
      */
     public IsolatedJsTask(String sourceCode, long statementLimit) {
-        this.out = new ByteArrayOutputStream();
+        this(sourceCode, statementLimit, new ByteArrayOutputStream(), null);
+    }
+
+    public IsolatedJsTask(String sourceCode, long statementLimit, OutputStream customOut) {
+        this(sourceCode, statementLimit, null, customOut);
+    }
+
+    private IsolatedJsTask(String sourceCode, long statementLimit, ByteArrayOutputStream defaultOut, OutputStream customOut) {
+        if (defaultOut != null && customOut != null)
+            throw new AssertionError("Both default OutputStream and custom one are provided, which is illegal");
+        if (defaultOut == null && customOut == null)
+            throw new AssertionError("Neither default OutputStream nor custom one is provided, which is illegal");
+
         Context.Builder builder = Context.newBuilder(LANG)
                                          .in(InputStream.nullInputStream())
-                                         .out(new BufferedOutputStream(out))
-                                         //provided, but unused by GraalJS
-                                         .err(new BufferedOutputStream(out))
+
                                          .allowHostAccess(HostAccess.NONE)
                                          .allowPolyglotAccess(PolyglotAccess.NONE)
                                          .allowCreateProcess(false)
@@ -94,8 +105,21 @@ public class IsolatedJsTask implements LanguageTask {
                                                                // context is closed automatically
                                                                // upon reaching the limit
                                                                // this is for other actions
-                                                               .onLimit((s) -> this.cancel())
+                                                               .onLimit(s -> this.cancel())
                                                                .build());
+        if (defaultOut != null) {
+            this.out = defaultOut;
+            BufferedOutputStream bufferedOut = new BufferedOutputStream(defaultOut);
+            builder.out(bufferedOut)
+                   //provided, but unused by GraalJS
+                   .err(bufferedOut);
+        } else {
+            builder.out(customOut)
+                   //provided, but unused by GraalJS
+                   .err(customOut);
+            this.out = null;
+        }
+
         this.startTime = Optional.empty();
         this.duration = Optional.empty();
         this.endTime = Optional.empty();
@@ -127,8 +151,13 @@ public class IsolatedJsTask implements LanguageTask {
     }
 
     @Override
+    @Nullable
     public String getOutput() {
-        return out.toString(StandardCharsets.UTF_8) + errors;
+        if (out != null) {
+            return out.toString(StandardCharsets.UTF_8) + errors;
+        } else {
+            return null;
+        }
     }
 
     @Override

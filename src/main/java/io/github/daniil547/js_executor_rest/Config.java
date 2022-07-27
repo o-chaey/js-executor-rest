@@ -11,9 +11,11 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.convert.converter.ConverterFactory;
+import org.springframework.core.task.support.TaskExecutorAdapter;
 import org.springframework.format.FormatterRegistry;
 import org.springframework.hateoas.config.EnableHypermediaSupport;
 import org.springframework.hateoas.support.WebStack;
+import org.springframework.web.servlet.config.annotation.AsyncSupportConfigurer;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.util.concurrent.ExecutorService;
@@ -26,6 +28,11 @@ public class Config implements WebMvcConfigurer {
 
     @Value("${task-execution.parallelism}")
     public Integer parallelism;
+
+    @Override
+    public void configureAsyncSupport(AsyncSupportConfigurer configurer) {
+        configurer.setTaskExecutor(new TaskExecutorAdapter(threadPool()));
+    }
 
     @Bean
     public ExecutorService threadPool() {

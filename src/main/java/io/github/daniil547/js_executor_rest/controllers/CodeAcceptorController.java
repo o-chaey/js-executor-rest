@@ -6,7 +6,6 @@ import io.github.daniil547.js_executor_rest.domain.IsolatedJsTask;
 import io.github.daniil547.js_executor_rest.domain.LanguageTask;
 import io.github.daniil547.js_executor_rest.dtos.PatchTaskDto;
 import io.github.daniil547.js_executor_rest.dtos.TaskView;
-import io.github.daniil547.js_executor_rest.mappers.TaskToViewMapper;
 import io.github.daniil547.js_executor_rest.services.RsqlToPredicateVisitor;
 import io.github.daniil547.js_executor_rest.services.TaskDispatcher;
 import io.github.daniil547.js_executor_rest.services.TaskViewRepresentationModelAssembler;
@@ -25,12 +24,16 @@ import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.hateoas.RepresentationModel;
 import org.springframework.hateoas.mediatype.Affordances;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import javax.servlet.http.HttpServletResponse;
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -56,19 +59,15 @@ public class CodeAcceptorController {
     private final RsqlToPredicateVisitor<LanguageTask> rsqlToPredicateVisitor;
     private final TaskViewRepresentationModelAssembler taskReprAssembler;
 
-    private final TaskToViewMapper taskToViewMapper;
-
     @Autowired
     public CodeAcceptorController(TaskDispatcher taskDispatcher,
                                   RSQLParser rsqlParser,
                                   @Value("${task-execution.statement-limit}") Long statementLimit,
-                                  TaskViewRepresentationModelAssembler taskReprAssembler,
-                                  TaskToViewMapper taskToViewMapper) {
+                                  TaskViewRepresentationModelAssembler taskReprAssembler) {
         this.taskDispatcher = taskDispatcher;
         this.statementLimit = statementLimit;
         this.rsqlParser = rsqlParser;
         this.taskReprAssembler = taskReprAssembler;
-        this.taskToViewMapper = taskToViewMapper;
         rsqlToPredicateVisitor = new RsqlToPredicateVisitor<>(LanguageTask.class);
     }
 
@@ -78,7 +77,7 @@ public class CodeAcceptorController {
     public ResponseEntity<PagedModel<EntityModel<TaskView>>> getAllTasks(
             @RequestParam(required = false, name = "query") String query,
             Pageable paging,
-            PagedResourcesAssembler<TaskView> pagedResAss
+            PagedResourcesAssembler<TaskView> pagedResAssembler
     ) {
         Predicate<LanguageTask> filter = null;
         if (query != null && !query.isBlank()) {
@@ -89,7 +88,7 @@ public class CodeAcceptorController {
         Page<TaskView> taskViewPage = new PageImpl<>(queryResult,
                                                      paging,
                                                      taskDispatcher.getTaskCount());
-        return ResponseEntity.ok(pagedResAss.toModel(taskViewPage, taskReprAssembler));
+        return ResponseEntity.ok(pagedResAssembler.toModel(taskViewPage, taskReprAssembler));
     }
 
     @Operation(summary = "get all available info about the task",
@@ -150,16 +149,47 @@ public class CodeAcceptorController {
         taskDispatcher.addForExecution(newTask);
 
         ResponseEntity.BodyBuilder responseBuilder = ResponseEntity.created(
-                ServletUriComponentsBuilder.fromCurrentRequest()
-                                           .path("/{id}")
-                                           .buildAndExpand(newTask.getId()
-                                                                  .toString())
-                                           .toUri()
+                getTaskLocation(newTask)
         );
         // .body is called separately, otherwise Intellij messes up formatting
-
         return responseBuilder.body(taskReprAssembler.toModel(newTask.getId()));
     }
+
+    @Operation(
+            summary = "create a task by sending source as plain text, and continuously receive output as a stream",
+            operationId = "create and stream output",
+            // that's Java's lack of import aliases for you
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    content = @Content(
+                            schema = @Schema(type = "string"),
+                            mediaType = "text/plain",
+                            examples = {@ExampleObject("for(var i = 0; i < 1000; i++) {console.log(\"Hello, World!\");}")}
+                    )
+            ))
+    @PostMapping(path = "stream",
+                 consumes = MediaType.TEXT_PLAIN_VALUE)
+    //TODO add support for storing, canceling and deleting streaming tasks
+    //TODO for that should most likely refactor DefaultTaskDispatcher and IsolatedJsTask so that:
+    //TODO - DefaultTaskDispatcher only executes task
+    //TODO - there's a separate entity, storing the tasks
+    //TODO - task execution can be controlled by the task itself (e.g. task should store the Future
+    //TODO     and cancel() also cancels that Future)
+
+    public ResponseEntity<StreamingResponseBody> newTaskStream(@RequestBody String source,
+                                                               HttpServletResponse response) {
+        StreamingResponseBody srb = out -> {
+            IsolatedJsTask task = new IsolatedJsTask(source, statementLimit, out);
+            response.addHeader(
+                    HttpHeaders.LOCATION,
+                    getTaskLocation(task).toString().replace("/stream/", "/")
+            );
+            task.execute();
+        };
+        ResponseEntity.BodyBuilder responseBuilder = ResponseEntity.ok();
+
+        return responseBuilder.body(srb);
+    }
+
 
     @Operation(summary = "edit existing task (currently only cancel)",
                operationId = "update")
@@ -199,6 +229,14 @@ public class CodeAcceptorController {
                            ).afford(HttpMethod.GET)
                            .toLink()
         ));
+    }
+
+    private URI getTaskLocation(LanguageTask task) {
+        return ServletUriComponentsBuilder.fromCurrentRequest()
+                                          .path("/{id}")
+                                          .buildAndExpand(task.getId()
+                                                              .toString())
+                                          .toUri();
     }
 }
 
