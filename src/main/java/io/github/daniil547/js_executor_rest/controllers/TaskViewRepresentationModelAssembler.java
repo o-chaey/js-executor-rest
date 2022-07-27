@@ -1,7 +1,6 @@
-package io.github.daniil547.js_executor_rest.services;
+package io.github.daniil547.js_executor_rest.controllers;
 
-import io.github.daniil547.js_executor_rest.controllers.CodeAcceptorController;
-import io.github.daniil547.js_executor_rest.domain.LanguageTask;
+import io.github.daniil547.js_executor_rest.domain.objects.LanguageTask;
 import io.github.daniil547.js_executor_rest.dtos.PatchTaskDto;
 import io.github.daniil547.js_executor_rest.dtos.TaskView;
 import io.github.daniil547.js_executor_rest.util.HttpUtils;

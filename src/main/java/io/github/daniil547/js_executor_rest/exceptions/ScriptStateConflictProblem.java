@@ -1,6 +1,6 @@
 package io.github.daniil547.js_executor_rest.exceptions;
 
-import io.github.daniil547.js_executor_rest.domain.LanguageTask;
+import io.github.daniil547.js_executor_rest.domain.objects.LanguageTask;
 import org.zalando.problem.AbstractThrowableProblem;
 import org.zalando.problem.Status;
 

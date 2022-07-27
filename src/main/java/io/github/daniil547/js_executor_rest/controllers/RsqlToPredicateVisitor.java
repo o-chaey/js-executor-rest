@@ -1,4 +1,4 @@
-package io.github.daniil547.js_executor_rest.services;
+package io.github.daniil547.js_executor_rest.controllers;
 
 import cz.jirutka.rsql.parser.ast.*;
 import io.github.daniil547.js_executor_rest.exceptions.PropertyNotFoundProblem;

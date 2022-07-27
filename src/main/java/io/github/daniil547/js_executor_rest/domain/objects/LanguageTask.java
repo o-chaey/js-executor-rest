@@ -1,4 +1,4 @@
-package io.github.daniil547.js_executor_rest.domain;
+package io.github.daniil547.js_executor_rest.domain.objects;
 
 import java.time.Duration;
 import java.time.ZonedDateTime;

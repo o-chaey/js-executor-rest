@@ -2,13 +2,11 @@ package io.github.daniil547.js_executor_rest.controllers;
 
 import cz.jirutka.rsql.parser.RSQLParser;
 import cz.jirutka.rsql.parser.ast.Node;
-import io.github.daniil547.js_executor_rest.domain.IsolatedJsTask;
-import io.github.daniil547.js_executor_rest.domain.LanguageTask;
+import io.github.daniil547.js_executor_rest.domain.objects.IsolatedJsTask;
+import io.github.daniil547.js_executor_rest.domain.objects.LanguageTask;
+import io.github.daniil547.js_executor_rest.domain.services.TaskDispatcher;
 import io.github.daniil547.js_executor_rest.dtos.PatchTaskDto;
 import io.github.daniil547.js_executor_rest.dtos.TaskView;
-import io.github.daniil547.js_executor_rest.services.RsqlToPredicateVisitor;
-import io.github.daniil547.js_executor_rest.services.TaskDispatcher;
-import io.github.daniil547.js_executor_rest.services.TaskViewRepresentationModelAssembler;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;

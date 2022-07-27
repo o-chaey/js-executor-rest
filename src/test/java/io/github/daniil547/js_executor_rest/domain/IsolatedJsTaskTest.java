@@ -1,10 +1,10 @@
 package io.github.daniil547.js_executor_rest.domain;
 
+import io.github.daniil547.js_executor_rest.domain.objects.IsolatedJsTask;
+import io.github.daniil547.js_executor_rest.domain.objects.LanguageTask;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-
-import java.util.Optional;
 
 public class IsolatedJsTaskTest {
     /**
