@@ -1,6 +1,8 @@
 package io.github.daniil547.js_executor_rest.controllers;
 
 import cz.jirutka.rsql.parser.RSQLParserException;
+import org.graalvm.polyglot.PolyglotException;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.zalando.problem.Problem;
@@ -12,11 +14,32 @@ import org.zalando.problem.spring.web.advice.ProblemHandling;
 public class ExceptionHandlerController implements ProblemHandling {
 
     @ExceptionHandler
-    public ThrowableProblem toProblem(RSQLParserException exc) {
-        return Problem.builder()
-                      .withTitle("Bad request: bad RSQL filter query")
-                      .withStatus(Status.BAD_REQUEST)
-                      .withDetail(exc.getCause().getMessage())
-                      .build();
+    public ResponseEntity<ThrowableProblem> toProblem(RSQLParserException exc) {
+        return ResponseEntity.badRequest().body(
+                Problem.builder()
+                       .withTitle("Bad request: bad RSQL filter query")
+                       .withStatus(Status.BAD_REQUEST)
+                       .withDetail(exc.getCause().getMessage())
+                       .build()
+        );
+    }
+
+    @ExceptionHandler
+    public ResponseEntity<ThrowableProblem> toProblem(PolyglotException exc) {
+        if (exc.isGuestException()) {
+            return ResponseEntity.badRequest().body(
+                    Problem.builder()
+                           .withTitle("Bad request: bad script syntax")
+                           .withStatus(Status.BAD_REQUEST)
+                           .withDetail(exc.getMessage())
+                           .build()
+            );
+        } else {
+            return ResponseEntity.internalServerError().body(
+                    Problem.builder()
+                           .withStatus(Status.INTERNAL_SERVER_ERROR)
+                           .build()
+            );
+        }
     }
 }
