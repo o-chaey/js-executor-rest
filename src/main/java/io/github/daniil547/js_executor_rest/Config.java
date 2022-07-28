@@ -18,8 +18,11 @@ import org.springframework.hateoas.support.WebStack;
 import org.springframework.web.servlet.config.annotation.AsyncSupportConfigurer;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+import javax.annotation.PreDestroy;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 @Configuration
 @EnableHypermediaSupport(stacks = WebStack.WEBMVC,
@@ -29,14 +32,30 @@ public class Config implements WebMvcConfigurer {
     @Value("${task-execution.parallelism}")
     public Integer parallelism;
 
+    @Value("${task-execution.await-termination-for-ms}")
+    public Long awaitFor;
+
     @Override
     public void configureAsyncSupport(AsyncSupportConfigurer configurer) {
         configurer.setTaskExecutor(new TaskExecutorAdapter(threadPool()));
     }
 
     @Bean
+    @SuppressWarnings({"all"})
+    // unused, result-ignored, redundunt type argument <Runnable> (which is the way it's defined in Executors)
     public ExecutorService threadPool() {
-        return Executors.newFixedThreadPool(parallelism);
+        return  // same as Executors.newFixedThreadPool(parallelism)
+                // just declares a @PreDestroy method
+                new ThreadPoolExecutor(
+                        parallelism, parallelism,
+                        0L, TimeUnit.MILLISECONDS,
+                        new LinkedBlockingQueue<Runnable>()
+                ) {
+                    @PreDestroy
+                    public void awaitTermination() throws InterruptedException {
+                        this.awaitTermination(awaitFor, TimeUnit.MILLISECONDS);
+                    }
+                };
     }
 
     @Bean
