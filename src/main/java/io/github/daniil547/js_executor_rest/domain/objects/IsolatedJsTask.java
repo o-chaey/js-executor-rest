@@ -43,8 +43,8 @@ import java.util.stream.StreamSupport;
  */
 public class IsolatedJsTask implements LanguageTask {
     public static final String LANG = "js";
-    public static final String EXECUTE = "start";
-    public static final String CANCEL = "cancel";
+    private static final String EXECUTE = "start";
+    private static final String CANCEL = "cancel";
     private final Context polyglotContext;
     private final UUID id;
     private final String sourceCode;
@@ -74,11 +74,19 @@ public class IsolatedJsTask implements LanguageTask {
         this(sourceCode, statementLimit, null, customOut);
     }
 
-    private IsolatedJsTask(String sourceCode, long statementLimit, ByteArrayOutputStream defaultOut, OutputStream customOut) {
-        if (defaultOut != null && customOut != null)
-            throw new AssertionError("Both default OutputStream and custom one are provided, which is illegal");
-        if (defaultOut == null && customOut == null)
-            throw new AssertionError("Neither default OutputStream nor custom one is provided, which is illegal");
+    private IsolatedJsTask(String sourceCode,
+                           long statementLimit,
+                           ByteArrayOutputStream defaultOut,
+                           OutputStream customOut) {
+        if (defaultOut != null && customOut != null) {
+            throw new AssertionError(
+                    "private IsolatedJsTask(String, long, ByteArrayOutputStream default, OutputStream custom)" +
+                    " used incorrectly: both default and custom output streams were provided");
+        }
+        if (defaultOut == null && customOut == null) {
+            throw new AssertionError("private IsolatedJsTask(String, long, ByteArrayOutputStream, OutputStream)" +
+                                     " used incorrectly: both output streams were null");
+        }
 
         Context.Builder builder = Context.newBuilder(LANG)
                                          .in(InputStream.nullInputStream())
@@ -271,8 +279,9 @@ public class IsolatedJsTask implements LanguageTask {
                          // for a script inside a context shouldn't matter
                          .build();
         } catch (IOException e) {
-            throw new AssertionError("Source.Builder.build() wasn't expected " +
-                                     "to fail when source is loaded from a string", e);
+            throw new AssertionError("Source.Builder.build() failed loading a source from a string." +
+                                     "This wasn't expected. If this happened, it has to be determined why it failed," +
+                                     "and that case has to be handled.", e);
         }
     }
 

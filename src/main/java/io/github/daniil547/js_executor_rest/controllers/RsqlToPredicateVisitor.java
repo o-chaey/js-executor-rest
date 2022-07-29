@@ -11,6 +11,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 public class RsqlToPredicateVisitor<T> extends NoArgRSQLVisitorAdapter<Predicate<T>> {
+
     private final Class<T> type;
 
     public RsqlToPredicateVisitor(Class<T> type) {
@@ -42,7 +43,8 @@ public class RsqlToPredicateVisitor<T> extends NoArgRSQLVisitorAdapter<Predicate
                 type, methName);
         List<String> args = node.getArguments();
         Function<T, String> fn = v -> ReflectionUtils.invokeGetter(getter, v).toString();
-        Predicate<T> propertyPredicate = switch (node.getOperator().getSymbol()) {
+        String operator = node.getOperator().getSymbol();
+        return switch (operator) {
             case "==" -> lt -> fn.apply(lt).equals(args.get(0));
             case "!=" -> lt -> !fn.apply(lt).equals(args.get(0));
             case "=lt=" -> lt -> fn.apply(lt).compareTo(args.get(0)) < 0;
@@ -54,10 +56,10 @@ public class RsqlToPredicateVisitor<T> extends NoArgRSQLVisitorAdapter<Predicate
             // this *should* only be reached if another operator was registered
             // if this is not the case, RSQLParser should throw earlier
             default -> throw new AssertionError(
-                    "A new comparison operator was registered, but wasn't handled"
-            );
+                    "A new comparison operator \"" + operator + "\" was registered, but wasn't handled.%n " +
+                    "An application-wide RSQLParser bean is configured in" +
+                    "io.github.daniil547.js_executor_rest.Config.rsqlParser()");
         };
-        return propertyPredicate;
     }
 
     private Predicate<T> traverseChildren(LogicalNode node,
