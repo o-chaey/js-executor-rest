@@ -55,7 +55,6 @@ public class IsolatedJsTask implements LanguageTask {
     private final Source polyglotSource;
 
     private Optional<ZonedDateTime> startTime;
-    private Optional<Duration> duration;
     private Optional<ZonedDateTime> endTime;
 
 
@@ -157,7 +156,6 @@ public class IsolatedJsTask implements LanguageTask {
         }
 
         this.startTime = Optional.empty();
-        this.duration = Optional.empty();
         this.endTime = Optional.empty();
         this.polyglotContext = builder.build();
         this.sourceCode = sourceCode;
@@ -335,7 +333,5 @@ public class IsolatedJsTask implements LanguageTask {
 
     private void catchEndTime() {
         endTime = Optional.of(ZonedDateTime.now());
-        duration = Optional.of(Duration.between(startTime.get(),
-                                                endTime.get()));
     }
 }
