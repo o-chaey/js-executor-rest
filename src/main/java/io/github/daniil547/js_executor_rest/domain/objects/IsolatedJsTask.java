@@ -143,16 +143,20 @@ public class IsolatedJsTask implements LanguageTask {
         if (defaultOut != null) {
             this.out = defaultOut;
             this.customOut = null;
+
             BufferedOutputStream bufferedOut = new BufferedOutputStream(defaultOut);
             builder.out(bufferedOut)
                    //provided, but unused by GraalJS
-                   .err(bufferedOut);
+                   .err(bufferedOut)
+                   .logHandler(bufferedOut);
         } else {
-            builder.out(customOut)
-                   //provided, but unused by GraalJS
-                   .err(customOut);
             this.out = null;
             this.customOut = customOut;
+
+            builder.out(customOut)
+                   //provided, but unused by GraalJS
+                   .err(customOut)
+                   .logHandler(customOut);
         }
 
         this.startTime = Optional.empty();
