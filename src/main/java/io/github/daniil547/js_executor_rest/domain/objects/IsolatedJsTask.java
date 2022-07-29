@@ -219,13 +219,8 @@ public class IsolatedJsTask implements LanguageTask {
      */
     @Override
     public Optional<Duration> getDuration() {
-        if (currentStatus.compareAndSet(Status.RUNNING, Status.RUNNING)) {
-            return startTime.map(
-                    zonedDateTime -> Duration.between(zonedDateTime, ZonedDateTime.now())
-            );
-        } else {
-            return duration;
-        }
+        // note: Duration.between() can't be substituted with Duration.from(), from() is just a conversion method
+        return startTime.map(s -> Duration.between(s, endTime.orElse(ZonedDateTime.now())));
     }
 
     @Override
