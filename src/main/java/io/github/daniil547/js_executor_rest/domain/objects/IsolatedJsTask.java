@@ -10,10 +10,10 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.time.temporal.Temporal;
+import java.util.Iterator;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.StreamSupport;
 
 /**
  * Represents a single script of Javascript language
@@ -45,19 +45,19 @@ public class IsolatedJsTask implements LanguageTask {
     public static final String LANG = "js";
     private static final String EXECUTE = "start";
     private static final String CANCEL = "cancel";
+    public static final String AT = "\tat ";
     private final Context polyglotContext;
     private final UUID id;
     private final String sourceCode;
-    private AtomicReference<Status> currentStatus;
+    private final AtomicReference<Status> currentStatus;
     private final ByteArrayOutputStream out;
-    private String errors = "";
+    private final OutputStream customOut;
+    private final Source polyglotSource;
 
     private Optional<ZonedDateTime> startTime;
     private Optional<Duration> duration;
     private Optional<ZonedDateTime> endTime;
 
-    private final Object lock = new Object();
-    private final Source polyglotSource;
 
     /**
      * Create {@link IsolatedJsTask} with a default output stream - ByteArrayOutputStream.
@@ -70,6 +70,13 @@ public class IsolatedJsTask implements LanguageTask {
         this(sourceCode, statementLimit, new ByteArrayOutputStream(), null);
     }
 
+    /**
+     * Create {@link IsolatedJsTask} with a custom output stream.
+     *
+     * @param sourceCode     JavaScript code to be executed
+     * @param statementLimit maximum number of statements allowed to be executed by this task
+     * @param customOut      output stream for the task to write to
+     */
     public IsolatedJsTask(String sourceCode, long statementLimit, OutputStream customOut) {
         this(sourceCode, statementLimit, null, customOut);
     }
@@ -88,33 +95,55 @@ public class IsolatedJsTask implements LanguageTask {
                                      " used incorrectly: both output streams were null");
         }
 
-        Context.Builder builder = Context.newBuilder(LANG)
-                                         .in(InputStream.nullInputStream())
+        Context.Builder builder =
+                Context.newBuilder(LANG)
+                       .in(InputStream.nullInputStream())
+                       // obviously, not a good idea to allow
+                       .allowAllAccess(false)
+                       // determines if context can access things like java arrays, iterators,
+                       // specific classes or classes annotated by particular annotations etc
+                       // not restricted here
+                       .allowHostAccess(HostAccess.ALL)
+                       // filters classes by their fully qualified name
+                       // here reflection and the app's packages are filtered out
+                       .allowHostClassLookup(clazz ->
+                                                     !clazz.startsWith("io.github.daniil547.js_executor_rest")
+                                                     && !clazz.startsWith("java.lang.reflect"))
+                       // determines which languages can evaluate code of which languages
+                       // not restricted here
+                       .allowPolyglotAccess(PolyglotAccess.ALL)
+                       // thread/process creation is prohibited
+                       .allowCreateProcess(false)
+                       .allowCreateThread(false)
+                       .allowEnvironmentAccess(EnvironmentAccess.NONE)
+                       // IO operations on host system
+                       .allowIO(true)
+                       .useSystemExit(false)
+                       // guests are prohibited to load classes from files
+                       .allowHostClassLoading(false)
+                       // JNI. Also, some languages need it to boot their environment up (though not js)
+                       .allowNativeAccess(true)
+                       // sharing org.graalvm.polyglot.Value between different langs
+                       .allowValueSharing(true)
 
-                                         .allowHostAccess(HostAccess.NONE)
-                                         .allowPolyglotAccess(PolyglotAccess.NONE)
-                                         .allowCreateProcess(false)
-                                         .allowCreateThread(false)
-                                         .allowHostAccess(HostAccess.SCOPED)
-                                         .allowAllAccess(false)
-                                         .allowEnvironmentAccess(EnvironmentAccess.NONE)
-                                         // unavailable in community edition of GraalVM
-                                         //.option("sandbox.MaxHeapMemory", /*inject from config*/);
-                                         // and also requires
-                                         //.allowExperimentalOptions(true)
-                                         //so there's a workaround (and the only stable resource limiting feature)
-                                         .resourceLimits(
-                                                 ResourceLimits.newBuilder()
-                                                               // perform no filtering
-                                                               .statementLimit(statementLimit,
-                                                                               null)
-                                                               // context is closed automatically
-                                                               // upon reaching the limit
-                                                               // this is for other actions
-                                                               .onLimit(s -> this.cancel())
-                                                               .build());
+                       // unavailable in community edition of GraalVM
+                       // .option("sandbox.MaxHeapMemory", /*inject from config*/);
+                       // and also requires
+                       // .allowExperimentalOptions(true)
+                       // so there's a workaround (and the only stable resource limiting feature)
+                       .resourceLimits(
+                               ResourceLimits.newBuilder()
+                                             // perform no filtering
+                                             .statementLimit(statementLimit,
+                                                             null)
+                                             // context is closed automatically
+                                             // upon reaching the limit
+                                             // this is for other actions
+                                             .onLimit(s -> this.cancel())
+                                             .build());
         if (defaultOut != null) {
             this.out = defaultOut;
+            this.customOut = null;
             BufferedOutputStream bufferedOut = new BufferedOutputStream(defaultOut);
             builder.out(bufferedOut)
                    //provided, but unused by GraalJS
@@ -124,6 +153,7 @@ public class IsolatedJsTask implements LanguageTask {
                    //provided, but unused by GraalJS
                    .err(customOut);
             this.out = null;
+            this.customOut = customOut;
         }
 
         this.startTime = Optional.empty();
@@ -133,7 +163,7 @@ public class IsolatedJsTask implements LanguageTask {
         this.sourceCode = sourceCode;
         this.polyglotSource = makeSource();
         polyglotContext.parse(polyglotSource);
-        currentStatus = new AtomicReference<>(Status.SCHEDULED);
+        this.currentStatus = new AtomicReference<>(Status.SCHEDULED);
         id = UUID.randomUUID();
     }
 
@@ -160,7 +190,7 @@ public class IsolatedJsTask implements LanguageTask {
     @Nullable
     public String getOutput() {
         if (out != null) {
-            return out.toString(StandardCharsets.UTF_8) + errors;
+            return out.toString(StandardCharsets.UTF_8);
         } else {
             return null;
         }
@@ -229,24 +259,46 @@ public class IsolatedJsTask implements LanguageTask {
             );
         }
 
-        try {
+        try (polyglotContext) {
             polyglotContext.eval(polyglotSource);
         }
         // GraalJS doesn't write errors to its err, even though it is provided
         // to the builder in the constructor above
         catch (PolyglotException e) {
-            StringBuilder errorAcumulator = new StringBuilder("");
-            errorAcumulator.append(e.getMessage());
-            StreamSupport.stream(e.getPolyglotStackTrace().spliterator(), false)
-                         // don't wanna leak implementation details, do we?
-                         // though some formatting or wording may still be unique to GraalVM
-                         .filter(PolyglotException.StackFrame::isGuestFrame)
-                         .forEach(obj -> errorAcumulator.append(obj).append("\n"));
-            errors = errorAcumulator.toString();
+            PrintWriter outWriter;
+            outWriter = new PrintWriter(out != null ? out : customOut,
+                                        true);
+            outWriter.println(e.getMessage());
+
+            Iterator<PolyglotException.StackFrame> iterator = e.getPolyglotStackTrace().iterator();
+            while (iterator.hasNext()) {
+                // this is safe because there always are at least two trailing frames
+                // that belong to our application, and they are filtered
+                // in the code below
+                // (all guest calls ultimately originate from this file and method,
+                // (since guest scripts are not allowed to create new threads/processes)
+                // and here we call Context.eval() which creates an additional stack frame)
+                PolyglotException.StackFrame currentFrame = iterator.next();
+                PolyglotException.StackFrame nextFrame = iterator.next();
+                PolyglotException.StackFrame nextPlus1Frame = iterator.next();
+
+                // a guest frame...
+                if (currentFrame.isGuestFrame()
+                    // ...followed by the host frame...
+                    && nextFrame.isHostFrame()
+                    // ...and a call from our app means that it's the last guest frame
+                    && nextPlus1Frame.toString().startsWith("io.github.daniil547")) {
+                    outWriter.println(AT + currentFrame);
+                    break;
+                }
+                outWriter.println(AT + currentFrame);
+                outWriter.println(AT + nextFrame);
+                outWriter.println(AT + nextPlus1Frame);
+            }
+            outWriter.close();
         } finally {
             currentStatus.set(Status.FINISHED);
             catchEndTime();
-            polyglotContext.close();
         }
     }
 
@@ -262,6 +314,7 @@ public class IsolatedJsTask implements LanguageTask {
         if (currentStatus.compareAndSet(Status.SCHEDULED, Status.CANCELED)
             || currentStatus.compareAndSet(Status.RUNNING, Status.CANCELED)) {
             catchEndTime();
+            polyglotContext.close();
         } else {
             throw new ScriptStateConflictProblem(
                     "Task " + this.id + " is already " + currentStatus.toString().toLowerCase() +
