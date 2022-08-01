@@ -15,6 +15,7 @@ import org.springframework.core.task.support.TaskExecutorAdapter;
 import org.springframework.format.FormatterRegistry;
 import org.springframework.hateoas.config.EnableHypermediaSupport;
 import org.springframework.hateoas.support.WebStack;
+import org.springframework.lang.NonNull;
 import org.springframework.web.servlet.config.annotation.AsyncSupportConfigurer;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -41,8 +42,9 @@ public class Config implements WebMvcConfigurer {
     }
 
     @Bean
-    @SuppressWarnings({"all"})
-    // unused, result-ignored, redundunt type argument <Runnable> (which is the way it's defined in Executors)
+    // redundant type argument <Runnable>
+    // (which is the way it's defined in Executors)
+    @SuppressWarnings({"squid:S2293", "Convert2Diamond"})
     public ExecutorService threadPool() {
         return  // same as Executors.newFixedThreadPool(parallelism)
                 // just declares a @PreDestroy method
@@ -51,6 +53,7 @@ public class Config implements WebMvcConfigurer {
                         0L, TimeUnit.MILLISECONDS,
                         new LinkedBlockingQueue<Runnable>()
                 ) {
+                    @SuppressWarnings({"ResultOfMethodCallIgnored", "unused"})
                     @PreDestroy
                     public void awaitTermination() throws InterruptedException {
                         this.awaitTermination(awaitFor, TimeUnit.MILLISECONDS);
@@ -77,12 +80,15 @@ public class Config implements WebMvcConfigurer {
         return new RSQLParser();
     }
 
+    @SuppressWarnings({"squid:S3740", "rawtypes"})
     @Bean
     @Primary
     public ConverterFactory<String, Enum> stringToEnumCaseInsensitiveConvFactory() {
         return new ConverterFactory<>() {
+            @SuppressWarnings("unchecked")
+            @NonNull
             @Override
-            public <T extends Enum> Converter<String, T> getConverter(Class<T> targetType) {
+            public <T extends Enum> Converter<String, T> getConverter(@NonNull Class<T> targetType) {
                 return newStrToEnumConverter(targetType);
             }
         };

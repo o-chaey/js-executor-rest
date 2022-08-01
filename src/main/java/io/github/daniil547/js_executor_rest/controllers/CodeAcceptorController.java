@@ -8,6 +8,9 @@ import io.github.daniil547.js_executor_rest.domain.services.TaskDispatcher;
 import io.github.daniil547.js_executor_rest.dtos.PatchTaskDto;
 import io.github.daniil547.js_executor_rest.dtos.TaskView;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -47,6 +50,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
  * Has CRUD functionality.
  */
 
+@SuppressWarnings({"squid:S1452", "unused"})
 @Tag(name = "JS Executor", description = "Service for remote execution of JS code")
 @RestController
 @RequestMapping("/execution/")
@@ -69,12 +73,57 @@ public class CodeAcceptorController {
         rsqlToPredicateVisitor = new RsqlToPredicateVisitor<>(LanguageTask.class);
     }
 
-    @Operation(summary = "get all available info about all the tasks (except deleted)",
-               operationId = "get all")
+    @SuppressWarnings({"squid:S5665", "UnnecessaryStringEscape"})
+    @Operation(
+            summary = "get all available info about all the tasks (except deleted)",
+            operationId = "get all",
+            description = "",
+            parameters = {
+                    @Parameter(
+                            name = "filter",
+                            description = """
+                                    #### Available logical operators:\n
+                                    Logical AND: `;` or `and`\n
+                                    Logical OR: `,` or `or`\n
+                                    By default, the AND operator takes precedence over OR,
+                                    but parenthesis can be used to group expressions\n
+                                    #### Available comparison operators\n
+                                    Equal to: `==`\n
+                                    Not equal to: `!=`\n
+                                    Less than: `=lt=` or `<`\n
+                                    Less than or equal to: `=le=` or `<=`\n
+                                    Greater than operator: `=gt=` or `>`\n
+                                    Greater than or equal to: `=ge=` or `>=`\n
+                                    In: `=in=`\n
+                                    Not in: `=out=`\n
+                                      """
+                    ),
+                    @Parameter(in = ParameterIn.QUERY,
+                               description = "Zero-based page index (0..N)",
+                               name = "page",
+                               schema = @Schema(type = "integer", defaultValue = "0")
+                    ),
+                    @Parameter(in = ParameterIn.QUERY,
+                               description = "The size of the page to be returned",
+                               name = "size",
+                               schema = @Schema(type = "integer", defaultValue = "10")
+                    ),
+                    @Parameter(in = ParameterIn.QUERY,
+                               description = "Sorting criteria in the format: property,(asc|desc). "
+                                             + "Default sort order is ascending. " + "Multiple sort criteria are supported.",
+                               name = "sort",
+                               array = @ArraySchema(schema = @Schema(type = "string", example = "status"))
+                    )
+            }
+    )
     @GetMapping
     public ResponseEntity<PagedModel<EntityModel<TaskView>>> getAllTasks(
-            @RequestParam(required = false, name = "query") String query,
+            @RequestParam(required = false, name = "filter")
+            String query,
+            @Parameter(hidden = true)
             Pageable paging,
+            @SuppressWarnings("ConstantConditions") // injected by Spring, should never be null
+            @Parameter(hidden = true)
             PagedResourcesAssembler<TaskView> pagedResAssembler
     ) {
         Predicate<LanguageTask> filter = null;
