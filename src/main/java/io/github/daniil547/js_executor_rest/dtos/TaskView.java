@@ -16,6 +16,7 @@ public record TaskView(
         String output,
 
         Optional<ZonedDateTime> startTime,
+        @Schema(type = "string", format = "duration")
         Optional<Duration> duration,
         Optional<ZonedDateTime> endTime
 ) {

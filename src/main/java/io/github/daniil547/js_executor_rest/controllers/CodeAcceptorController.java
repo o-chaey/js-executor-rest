@@ -32,6 +32,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import org.zalando.problem.Problem;
+import org.zalando.problem.Status;
 
 import javax.servlet.http.HttpServletResponse;
 import java.net.URI;
@@ -53,7 +55,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @SuppressWarnings({"squid:S1452", "unused"})
 @Tag(name = "JS Executor", description = "Service for remote execution of JS code")
 @RestController
-@RequestMapping("/execution/")
+@RequestMapping("/tasks/")
 public class CodeAcceptorController {
     private final TaskDispatcher taskDispatcher;
     private final Long statementLimit;
@@ -126,6 +128,12 @@ public class CodeAcceptorController {
             @Parameter(hidden = true)
             PagedResourcesAssembler<TaskView> pagedResAssembler
     ) {
+        if (paging == null) {
+            throw Problem.builder().withTitle("Bad request")
+                         .withStatus(Status.BAD_REQUEST)
+                         .withDetail("Paging must not be null")
+                         .build();
+        }
         Predicate<LanguageTask> filter = null;
         if (query != null && !query.isBlank()) {
             Node rootNode = rsqlParser.parse(query);
@@ -241,16 +249,12 @@ public class CodeAcceptorController {
     @Operation(summary = "edit existing task (currently only cancel)",
                operationId = "update")
     @PatchMapping("{id}")
-    public ResponseEntity<?> cancelTask(@PathVariable UUID id,
-                                        @RequestBody PatchTaskDto patch) {
-        if (patch.status() == LanguageTask.Status.CANCELED) {
-            taskDispatcher.cancelExecution(id);
-            return ResponseEntity.ok(taskReprAssembler.toModel(id));
-        } else {
-            return ResponseEntity.badRequest()
-                                 .body(Map.of("message",
-                                              "You can change script's state only by canceling it"));
-        }
+    public ResponseEntity<RepresentationModel<?>> cancelTask(
+            @PathVariable UUID id,
+            @RequestBody PatchTaskDto patch
+    ) {
+        taskDispatcher.cancelExecution(id);
+        return ResponseEntity.ok(taskReprAssembler.toModel(id));
     }
 
     @Operation(summary = "delete a task",
@@ -259,24 +263,19 @@ public class CodeAcceptorController {
     public ResponseEntity<RepresentationModel<?>> removeTask(@PathVariable UUID id) {
         taskDispatcher.removeTask(id);
         return ResponseEntity.ok(RepresentationModel.of(null).add(
-                Affordances.of(linkTo(
-                                       methodOn(this.getClass())
-                                               .newTask("")
-                               ).withRel("newTask")
-                           ).afford(HttpMethod.POST)
-                           .toLink(),
-                // NOTE: the following will be excluded, see notes in
-                // io.github.daniil547.js_executor_rest.services.TaskViewRepresentationModelAssembler.doAddLinks()
-                Affordances.of(linkTo(
-                                       methodOn(this.getClass())
-                                               .getAllTasks(null,
-                                                            Pageable.ofSize(10),
-                                                            null)
-                               ).withRel("getAllTasks")
-                           ).afford(HttpMethod.GET)
-                           .toLink()
-        ));
+                                         Affordances.of(linkTo(methodOn(CodeAcceptorController.class)
+                                                                       .newTask("")).withRel("collection"))
+                                                    //                                                    .afford(HttpMethod.POST)
+                                                    //                                                    .withName("newTask")
+                                                    // NOTE: the following will be excluded, see notes in
+                                                    // io.github.daniil547.js_executor_rest.services.TaskViewRepresentationModelAssembler.doAddLinks()
+                                                    .afford(HttpMethod.GET)
+                                                    .withName("getAllTasks")
+                                                    .toLink()
+                                 )
+        );
     }
+
 
     private URI getTaskLocation(LanguageTask task) {
         return ServletUriComponentsBuilder.fromCurrentRequest()

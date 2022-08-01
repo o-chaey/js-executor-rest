@@ -13,6 +13,7 @@ import org.springframework.hateoas.mediatype.ConfigurableAffordance;
 import org.springframework.hateoas.server.SimpleRepresentationModelAssembler;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.util.List;
 import java.util.UUID;
@@ -46,9 +47,16 @@ public class TaskViewRepresentationModelAssembler implements SimpleRepresentatio
     }
 
     private void doAddLinks(RepresentationModel<?> resource, UUID id) {
-        Link selfLink = linkTo(controller).slash(id)
-                                          .withSelfRel();
-        ConfigurableAffordance affsOnSelfResource = Affordances.of(selfLink)
+        String mainRel;
+        if (!(resource instanceof EntityModel)) {
+            mainRel = "resource";
+            resource.add(Link.of(ServletUriComponentsBuilder.fromCurrentRequest().toUriString(), "self"));
+        } else {
+            mainRel = "self";
+        }
+        Link resLink = linkTo(controller).slash(id)
+                                         .withRel(mainRel);
+        ConfigurableAffordance affsOnSelfResource = Affordances.of(resLink)
                                                                .afford(HttpMethod.GET)
                                                                .withName("getTask")
 
@@ -77,22 +85,24 @@ public class TaskViewRepresentationModelAssembler implements SimpleRepresentatio
                 affsOnSelfResource.toLink(),
                 // and thу following are sub-resources
                 Affordances.of(
-                                   linkTo(methodOn(controller).getTaskSource(id)).withRel("self.source"))
+                                   linkTo(methodOn(controller).getTaskSource(id)).withRel(mainRel + ".source"))
                            .afford(HttpMethod.GET)
                            .withName("getTaskSource")
                            .toLink(),
                 Affordances.of(
-                                   linkTo(methodOn(controller).getTaskStatus(id)).withRel("self.status"))
+                                   linkTo(methodOn(controller).getTaskStatus(id)).withRel(mainRel + ".status"))
                            .afford(HttpMethod.GET)
                            .withName("getTaskStatus")
                            .toLink(),
                 Affordances.of(
-                                   linkTo(methodOn(controller).getTaskOutput(id)).withRel("self.output"))
+                                   linkTo(methodOn(controller).getTaskOutput(id)).withRel(mainRel + ".output"))
                            .afford(HttpMethod.GET)
                            .withName("getTaskOutput")
                            .toLink()
         );
         resource.add(linksAndAffs);
+
+
     }
 
 

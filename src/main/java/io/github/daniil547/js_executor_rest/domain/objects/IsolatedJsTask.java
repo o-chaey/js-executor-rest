@@ -311,7 +311,7 @@ public class IsolatedJsTask implements LanguageTask {
         if (currentStatus.compareAndSet(Status.SCHEDULED, Status.CANCELED)
             || currentStatus.compareAndSet(Status.RUNNING, Status.CANCELED)) {
             catchEndTime();
-            polyglotContext.close();
+            polyglotContext.close(true);
         } else {
             throw new ScriptStateConflictProblem(
                     "Task " + this.id + " is already " + currentStatus.toString().toLowerCase() +
