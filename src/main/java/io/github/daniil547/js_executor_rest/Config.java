@@ -30,6 +30,14 @@ import java.util.concurrent.TimeUnit;
                          type = EnableHypermediaSupport.HypermediaType.HAL_FORMS)
 public class Config implements WebMvcConfigurer {
 
+    /**
+     * Determines the number of threads used the {@link Config#threadPool()} bean, mustn't be zero.
+     * Positive values are interpreted literally: threads = parallelism, 0 < parallelism;
+     * might be higher than Runtime.getRuntime().availableProcessors(), as the latter isn't constant.
+     * <p>
+     * Negative values are interpreted as a percentage of processors available to JVM at startup
+     * threads = jvmProcs * (-parallelism/100), parallelism < 0
+     */
     @Value("${task-execution.parallelism}")
     public Integer parallelism;
 
@@ -46,10 +54,19 @@ public class Config implements WebMvcConfigurer {
     // (which is the way it's defined in Executors)
     @SuppressWarnings({"squid:S2293", "Convert2Diamond"})
     public ExecutorService threadPool() {
-        return  // same as Executors.newFixedThreadPool(parallelism)
+        int threads;
+        if (parallelism > 0) {
+            threads = parallelism;
+        } else if (parallelism < 0) {
+            int jvmProcs = Runtime.getRuntime().availableProcessors();
+            threads = (int) Math.ceil(jvmProcs * ((float) -parallelism / (float) 100));
+        } else {
+            throw new IllegalArgumentException("Parallelism must not be 0");
+        }
+        return  // same as Executors.newFixedThreadPool(threads)
                 // just declares a @PreDestroy method
                 new ThreadPoolExecutor(
-                        parallelism, parallelism,
+                        threads, threads,
                         0L, TimeUnit.MILLISECONDS,
                         new LinkedBlockingQueue<Runnable>()
                 ) {
