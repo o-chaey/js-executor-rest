@@ -6,6 +6,9 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 public class IsolatedJsTaskTest {
     /**
      * If execution blocks on the task itself, it
@@ -13,15 +16,15 @@ public class IsolatedJsTaskTest {
      * behavior.
      *
      * @throws InterruptedException should never throw;
-     * if throws, the cause lies outside the scope of this test
+     *                              if throws, the cause lies outside the scope of this test
      */
     @Test
     @DisplayName("execution must not block for its entire duration")
     public void nonBlockingExecute() throws InterruptedException {
         IsolatedJsTask task = new IsolatedJsTask("while (true) {console.log(\"hello\");}",
                                                  Long.MAX_VALUE);
-        Thread executor = new Thread(task::execute);
-        executor.start();
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        task.execute(executor);
 
         Thread.sleep(10);
 

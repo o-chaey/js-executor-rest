@@ -12,7 +12,7 @@ public class PropertyNotFoundProblem extends AbstractThrowableProblem {
         super(null,
               "Bad request: " + titleSpecifics,
               Status.BAD_REQUEST,
-              "Resource" + resourceName + " has no property " + propertyName
+              "Resource " + resourceName + " has no property " + propertyName
               + ". Consider checking for typos and/or logic errors in your code",
               null,
               null,

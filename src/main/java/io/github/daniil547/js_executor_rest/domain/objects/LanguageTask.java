@@ -4,6 +4,9 @@ import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Represents a single script of a guest language.
@@ -118,9 +121,8 @@ public interface LanguageTask {
      */
     Optional<ZonedDateTime> getEndTime();
 
-
     /**
-     * Executes the task.
+     * Submits the task to the given {@link ExecutorService}.
      * <p>
      * While this method is running, {@link #getStatus}
      * must return {@link Status#RUNNING}.
@@ -137,7 +139,22 @@ public interface LanguageTask {
      *     </li>
      * </ul>
      */
-    void execute();
+    void execute(ExecutorService executor);
+
+    /**
+     * Indefinitely blocks waiting until the task completes, errors out,
+     * or the thread executing it is interrupted.
+     */
+    void await();
+
+    /**
+     * Blocks waiting for the specified duration until the task
+     * completes, errors out, or the thread executing it is interrupted.
+     *
+     * @param timeout  amount of <code>timeUnit</code>s to wait
+     * @param timeUnit specifies timeout resolution (seconds, hours, etc)
+     */
+    void await(long timeout, TimeUnit timeUnit) throws TimeoutException;
 
     /**
      * Cancels the task. Actual effect is up to implementation.

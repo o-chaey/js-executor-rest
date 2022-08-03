@@ -5,6 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import cz.jirutka.rsql.parser.RSQLParser;
+import io.github.daniil547.js_executor_rest.controllers.RsqlToPredicateVisitor;
+import io.github.daniil547.js_executor_rest.controllers.SortToComparatorConverter;
+import io.github.daniil547.js_executor_rest.domain.objects.LanguageTask;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -12,6 +16,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.convert.converter.ConverterFactory;
 import org.springframework.core.task.support.TaskExecutorAdapter;
+import org.springframework.data.util.Pair;
 import org.springframework.format.FormatterRegistry;
 import org.springframework.hateoas.config.EnableHypermediaSupport;
 import org.springframework.hateoas.support.WebStack;
@@ -20,10 +25,16 @@ import org.springframework.web.servlet.config.annotation.AsyncSupportConfigurer;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import javax.annotation.PreDestroy;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Configuration
 @EnableHypermediaSupport(stacks = WebStack.WEBMVC,
@@ -55,6 +66,7 @@ public class Config implements WebMvcConfigurer {
     @SuppressWarnings({"squid:S2293", "Convert2Diamond"})
     public ExecutorService threadPool() {
         int threads;
+        System.out.println(parallelism);
         if (parallelism > 0) {
             threads = parallelism;
         } else if (parallelism < 0) {
@@ -76,6 +88,36 @@ public class Config implements WebMvcConfigurer {
                         this.awaitTermination(awaitFor, TimeUnit.MILLISECONDS);
                     }
                 };
+    }
+
+    @Bean
+    public RsqlToPredicateVisitor<LanguageTask> rsqlToTaskPredicate(
+            @Qualifier("taskPropertyRegistry") Map<String, MethodHandle> propertyRegistry) {
+        return new RsqlToPredicateVisitor<>(propertyRegistry);
+    }
+
+    @Bean
+    public SortToComparatorConverter<LanguageTask> sortToTaskComparator(
+            @Qualifier("taskPropertyRegistry") Map<String, MethodHandle> propertyRegistry) {
+        return new SortToComparatorConverter<>(propertyRegistry);
+    }
+
+    @Bean("taskPropertyRegistry")
+    public Map<String, MethodHandle> taskPropertyRegistry() {
+        MethodHandles.Lookup lookup = MethodHandles.publicLookup();
+        Method[] declaredMethods = LanguageTask.class.getDeclaredMethods();
+        return Arrays.stream(declaredMethods)
+                     .filter(m -> m.getName().startsWith("get"))
+                     .map(m -> {
+                         try {
+                             String prptyNam = m.getName();
+                             return Pair.of(prptyNam.substring(3, 4).toLowerCase() + prptyNam.substring(4),
+                                            lookup.unreflect(m));
+                         } catch (IllegalAccessException e) {
+                             throw new AssertionError("", e);
+                         }
+                     }).collect(Collectors.toUnmodifiableMap(
+                        Pair::getFirst, Pair::getSecond));
     }
 
     @Bean

@@ -2,6 +2,8 @@ package io.github.daniil547.js_executor_rest.domain.objects;
 
 import io.github.daniil547.js_executor_rest.exceptions.ScriptStateConflictProblem;
 import org.graalvm.polyglot.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.lang.Nullable;
 
 import java.io.*;
@@ -13,6 +15,7 @@ import java.time.temporal.Temporal;
 import java.util.Iterator;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -53,10 +56,13 @@ public class IsolatedJsTask implements LanguageTask {
     private final ByteArrayOutputStream out;
     private final OutputStream customOut;
     private final Source polyglotSource;
+    private static final Logger logger = LoggerFactory.getLogger(IsolatedJsTask.class);
 
     private Optional<ZonedDateTime> startTime;
     private Optional<ZonedDateTime> endTime;
 
+    private Future<?> future;
+    private final PrintWriter outWriter;
 
     /**
      * Create {@link IsolatedJsTask} with a default output stream - ByteArrayOutputStream.
@@ -149,14 +155,28 @@ public class IsolatedJsTask implements LanguageTask {
                    //provided, but unused by GraalJS
                    .err(bufferedOut)
                    .logHandler(bufferedOut);
+            outWriter = new PrintWriter(defaultOut, true);
         } else {
             this.out = null;
             this.customOut = customOut;
 
             builder.out(customOut)
-                   //provided, but unused by GraalJS
-                   .err(customOut)
-                   .logHandler(customOut);
+                   // removed because on context close Graal calls flush()
+                   // which conflicts, when the customOut is an OutputStream
+                   // passed from StreamingResponseBody, hence managed by Spring,
+                   // and Spring happens to call close() before flush().
+                   // When this is not provided it prints to script's sout
+                   // which is the same.
+                   // If needed, constructor should be reworked/added to accept a
+                   // user-provided stream for logging, but we currently have no
+                   // use case for that
+                   // .logHandler(customOut)
+
+                   // provided, but unused by GraalJS
+                   .err(customOut);
+
+
+            outWriter = new PrintWriter(customOut, true);
         }
 
         this.startTime = Optional.empty();
@@ -231,7 +251,7 @@ public class IsolatedJsTask implements LanguageTask {
     }
 
     /**
-     * Executes the task.
+     * Submits the task to the provided {@link ExecutorService}.
      * <p>
      * While this method is running, {@link #getStatus}
      * returns {@link Status#RUNNING}. When it is
@@ -239,13 +259,19 @@ public class IsolatedJsTask implements LanguageTask {
      * or {@link Status#CANCELED}, if the task was canceled
      * by a user, or statement limit was hit.
      * <p>
-     * *Might* throw an {@link IOException}, if the loading of
+     * Submitted runnable throw an {@link IOException}, if the loading of
      * code fails. <br> Here it is loaded from a string, so such
      * event is unlikely, but it is ultimately up to
      * a language engine implementation.
      */
+
     @Override
-    public void execute() {
+    @SuppressWarnings("squid:S1612")
+    public void execute(ExecutorService executor) {
+        future = executor.submit(() -> this.execute());
+    }
+
+    private void execute() {
         if (currentStatus.compareAndSet(Status.SCHEDULED, Status.RUNNING)) {
             startTime = Optional.of(ZonedDateTime.now());
         } else {
@@ -256,15 +282,13 @@ public class IsolatedJsTask implements LanguageTask {
             );
         }
 
-        try (polyglotContext) {
+        try {
             polyglotContext.eval(polyglotSource);
         }
         // GraalJS doesn't write errors to its err, even though it is provided
         // to the builder in the constructor above
         catch (PolyglotException e) {
-            PrintWriter outWriter;
-            outWriter = new PrintWriter(out != null ? out : customOut,
-                                        true);
+
             outWriter.println(e.getMessage());
 
             Iterator<PolyglotException.StackFrame> iterator = e.getPolyglotStackTrace().iterator();
@@ -292,26 +316,72 @@ public class IsolatedJsTask implements LanguageTask {
                 outWriter.println(AT + nextFrame);
                 outWriter.println(AT + nextPlus1Frame);
             }
-            outWriter.close();
         } finally {
+            polyglotContext.close(true);
+
+            outWriter.close();
             currentStatus.set(Status.FINISHED);
             catchEndTime();
         }
     }
 
+    @Override
+    public void await() {
+        try {
+            this.future.get();
+        } catch (InterruptedException e) {
+            handleInterrupt();
+        }
+        // polyglot exception is caught in execute()
+        // anything else isn't expected
+        catch (ExecutionException e) {
+            handleUnexpected(e);
+        } catch (CancellationException e) {
+            handleCancellation();
+        }
+    }
+
+    @Override
+    public void await(long timeout, TimeUnit timeUnit) throws TimeoutException {
+        try {
+            this.future.get(timeout, timeUnit);
+        } catch (InterruptedException e) {
+            handleInterrupt();
+        } catch (ExecutionException e) {
+            handleUnexpected(e);
+        } catch (CancellationException e) {
+            handleCancellation();
+        }
+    }
+
+    private void handleUnexpected(ExecutionException e) {
+        throw new AssertionError("Unexpected exception", e);
+    }
+
+    private void handleInterrupt() {
+        // advised by sonar lint
+        Thread.currentThread().interrupt();
+    }
+
+    private void handleCancellation() {
+        logger.info("Task {} was canceled", this.id);
+    }
+
     /**
      * Cancels the task.
      * <p>
-     * This implementation is meant to be managed by an external
-     * executor, so it only changes the {@link #currentStatus}
-     * {@link Status#CANCELED}.
+     * Beside changing the {@link #currentStatus} to {@link Status#CANCELED},
+     * this method also closes the context and output streams, determines end time,
+     * prints the fact of cancelation
      */
     @Override
     public void cancel() {
         if (currentStatus.compareAndSet(Status.SCHEDULED, Status.CANCELED)
             || currentStatus.compareAndSet(Status.RUNNING, Status.CANCELED)) {
+            outWriter.println("Task was canceled by the user.");
+            outWriter.flush();
+            future.cancel(true);
             catchEndTime();
-            polyglotContext.close(true);
         } else {
             throw new ScriptStateConflictProblem(
                     "Task " + this.id + " is already " + currentStatus.toString().toLowerCase() +

@@ -1,21 +1,22 @@
 package io.github.daniil547.js_executor_rest.controllers;
 
 import cz.jirutka.rsql.parser.ast.*;
-import io.github.daniil547.js_executor_rest.exceptions.PropertyNotFoundProblem;
 import io.github.daniil547.js_executor_rest.util.ReflectionUtils;
 
-import java.lang.reflect.Method;
+import java.lang.invoke.MethodHandle;
 import java.util.List;
+import java.util.Map;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
 public class RsqlToPredicateVisitor<T> extends NoArgRSQLVisitorAdapter<Predicate<T>> {
 
-    private final Class<T> type;
 
-    public RsqlToPredicateVisitor(Class<T> type) {
-        this.type = type;
+    private final Map<String, MethodHandle> propertyRegistry;
+
+    public RsqlToPredicateVisitor(Map<String, MethodHandle> propertyRegistry) {
+        this.propertyRegistry = propertyRegistry;
     }
 
     @Override
@@ -32,15 +33,8 @@ public class RsqlToPredicateVisitor<T> extends NoArgRSQLVisitorAdapter<Predicate
     public Predicate<T> visit(ComparisonNode node) {
         String propertyName = node.getSelector();
 
-        String methName = "get" + Character.toUpperCase(propertyName.charAt(0))
-                          + propertyName.substring(1);
-        Method getter = ReflectionUtils.getDeclaredMethodOrThrow(
-                new PropertyNotFoundProblem(
-                        "bad RSQL filter query",
-                        "Task",
-                        propertyName
-                ),
-                type, methName);
+
+        MethodHandle getter = propertyRegistry.get(propertyName);
         List<String> args = node.getArguments();
         Function<T, String> fn = v -> ReflectionUtils.invokeGetter(getter, v).toString();
         String operator = node.getOperator().getSymbol();

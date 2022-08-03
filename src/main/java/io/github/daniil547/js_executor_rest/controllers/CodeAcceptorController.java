@@ -4,9 +4,10 @@ import cz.jirutka.rsql.parser.RSQLParser;
 import cz.jirutka.rsql.parser.ast.Node;
 import io.github.daniil547.js_executor_rest.domain.objects.IsolatedJsTask;
 import io.github.daniil547.js_executor_rest.domain.objects.LanguageTask;
-import io.github.daniil547.js_executor_rest.domain.services.TaskDispatcher;
 import io.github.daniil547.js_executor_rest.dtos.PatchTaskDto;
 import io.github.daniil547.js_executor_rest.dtos.TaskView;
+import io.github.daniil547.js_executor_rest.mappers.TaskToViewMapper;
+import io.github.daniil547.js_executor_rest.repos.TaskRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -20,6 +21,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.util.Pair;
 import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.PagedModel;
@@ -40,6 +42,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Predicate;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
@@ -57,22 +60,29 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @RestController
 @RequestMapping("/tasks/")
 public class CodeAcceptorController {
-    private final TaskDispatcher taskDispatcher;
+
+    private final TaskRepository taskRepository;
     private final Long statementLimit;
     private final RSQLParser rsqlParser;
     private final RsqlToPredicateVisitor<LanguageTask> rsqlToPredicateVisitor;
     private final TaskViewRepresentationModelAssembler taskReprAssembler;
+    private final TaskToViewMapper mapper;
+    private final ExecutorService threadPool;
 
     @Autowired
-    public CodeAcceptorController(TaskDispatcher taskDispatcher,
-                                  RSQLParser rsqlParser,
+    public CodeAcceptorController(TaskRepository taskRepository, RSQLParser rsqlParser,
                                   @Value("${task-execution.statement-limit}") Long statementLimit,
-                                  TaskViewRepresentationModelAssembler taskReprAssembler) {
-        this.taskDispatcher = taskDispatcher;
+                                  RsqlToPredicateVisitor<LanguageTask> rsqlToPredicateVisitor,
+                                  TaskViewRepresentationModelAssembler taskReprAssembler,
+                                  TaskToViewMapper mapper,
+                                  ExecutorService threadPool) {
+        this.taskRepository = taskRepository;
         this.statementLimit = statementLimit;
         this.rsqlParser = rsqlParser;
+        this.rsqlToPredicateVisitor = rsqlToPredicateVisitor;
         this.taskReprAssembler = taskReprAssembler;
-        rsqlToPredicateVisitor = new RsqlToPredicateVisitor<>(LanguageTask.class);
+        this.mapper = mapper;
+        this.threadPool = threadPool;
     }
 
     @SuppressWarnings({"squid:S5665", "UnnecessaryStringEscape"})
@@ -139,10 +149,11 @@ public class CodeAcceptorController {
             Node rootNode = rsqlParser.parse(query);
             filter = rootNode.accept(rsqlToPredicateVisitor);
         }
-        List<TaskView> queryResult = taskDispatcher.getAllTasks(filter, paging);
-        Page<TaskView> taskViewPage = new PageImpl<>(queryResult,
+        Pair<List<LanguageTask>, Integer> queryResult = taskRepository.getAllTasks(filter, paging);
+        List<TaskView> taskViews = queryResult.getFirst().stream().map(mapper::taskToView).toList();
+        Page<TaskView> taskViewPage = new PageImpl<>(taskViews,
                                                      paging,
-                                                     taskDispatcher.getTaskCount());
+                                                     queryResult.getSecond());
         return ResponseEntity.ok(pagedResAssembler.toModel(taskViewPage, taskReprAssembler));
     }
 
@@ -150,7 +161,7 @@ public class CodeAcceptorController {
                operationId = "get")
     @GetMapping("{id}/")
     public ResponseEntity<EntityModel<TaskView>> getTask(@PathVariable UUID id) {
-        return ResponseEntity.ok(taskReprAssembler.toModel(taskDispatcher.getTask(id)));
+        return ResponseEntity.ok(taskReprAssembler.toModel(mapper.taskToView(taskRepository.getTask(id))));
     }
 
     @Operation(summary = "get source code of the task, as was submitted",
@@ -158,7 +169,7 @@ public class CodeAcceptorController {
     @GetMapping("{id}/source")
     public ResponseEntity<RepresentationModel<?>> getTaskSource(@PathVariable UUID id) {
         RepresentationModel<?> sourceAndLinks = taskReprAssembler.toModel(
-                Map.of("source", taskDispatcher.getTask(id).source()),
+                Map.of("source", taskRepository.getTask(id).getSource()),
                 id
         );
         return ResponseEntity.ok(sourceAndLinks);
@@ -169,7 +180,7 @@ public class CodeAcceptorController {
     @GetMapping("{id}/status")
     public ResponseEntity<RepresentationModel<?>> getTaskStatus(@PathVariable UUID id) {
         RepresentationModel<?> statusAndLinks = taskReprAssembler.toModel(
-                Map.of("status", taskDispatcher.getTask(id).status()),
+                Map.of("status", taskRepository.getTask(id).getStatus()),
                 id
         );
         return ResponseEntity.ok(statusAndLinks);
@@ -180,7 +191,7 @@ public class CodeAcceptorController {
     @GetMapping("{id}/output")
     public ResponseEntity<RepresentationModel<?>> getTaskOutput(@PathVariable UUID id) {
         RepresentationModel<?> outputAndLinks = taskReprAssembler.toModel(
-                Map.of("output", taskDispatcher.getTask(id).output()),
+                Map.of("output", taskRepository.getTask(id).getOutput()),
                 id
         );
         return ResponseEntity.ok(outputAndLinks);
@@ -201,7 +212,8 @@ public class CodeAcceptorController {
     @PostMapping(consumes = MediaType.TEXT_PLAIN_VALUE)
     public ResponseEntity<RepresentationModel<?>> newTask(@RequestBody String source) {
         IsolatedJsTask newTask = new IsolatedJsTask(source, statementLimit);
-        taskDispatcher.addForExecution(newTask);
+        newTask.execute(threadPool);
+        taskRepository.storeTask(newTask);
 
         ResponseEntity.BodyBuilder responseBuilder = ResponseEntity.created(
                 getTaskLocation(newTask)
@@ -223,13 +235,6 @@ public class CodeAcceptorController {
             ))
     @PostMapping(path = "stream",
                  consumes = MediaType.TEXT_PLAIN_VALUE)
-    //TODO add support for storing, canceling and deleting streaming tasks
-    //TODO for that should most likely refactor DefaultTaskDispatcher and IsolatedJsTask so that:
-    //TODO - DefaultTaskDispatcher only executes task
-    //TODO - there's a separate entity, storing the tasks
-    //TODO - task execution can be controlled by the task itself (e.g. task should store the Future
-    //TODO     and cancel() also cancels that Future)
-
     public ResponseEntity<StreamingResponseBody> newTaskStream(@RequestBody String source,
                                                                HttpServletResponse response) {
         StreamingResponseBody srb = out -> {
@@ -238,7 +243,9 @@ public class CodeAcceptorController {
                     HttpHeaders.LOCATION,
                     getTaskLocation(task).toString().replace("/stream/", "/")
             );
-            task.execute();
+            taskRepository.storeTask(task);
+            task.execute(threadPool);
+            task.await();
         };
         ResponseEntity.BodyBuilder responseBuilder = ResponseEntity.ok();
 
@@ -253,7 +260,7 @@ public class CodeAcceptorController {
             @PathVariable UUID id,
             @RequestBody PatchTaskDto patch
     ) {
-        taskDispatcher.cancelExecution(id);
+        taskRepository.getTask(id).cancel();
         return ResponseEntity.ok(taskReprAssembler.toModel(id));
     }
 
@@ -261,12 +268,10 @@ public class CodeAcceptorController {
                operationId = "delete")
     @DeleteMapping("{id}")
     public ResponseEntity<RepresentationModel<?>> removeTask(@PathVariable UUID id) {
-        taskDispatcher.removeTask(id);
+        taskRepository.deleteTask(id);
         return ResponseEntity.ok(RepresentationModel.of(null).add(
                                          Affordances.of(linkTo(methodOn(CodeAcceptorController.class)
                                                                        .newTask("")).withRel("collection"))
-                                                    //                                                    .afford(HttpMethod.POST)
-                                                    //                                                    .withName("newTask")
                                                     // NOTE: the following will be excluded, see notes in
                                                     // io.github.daniil547.js_executor_rest.services.TaskViewRepresentationModelAssembler.doAddLinks()
                                                     .afford(HttpMethod.GET)

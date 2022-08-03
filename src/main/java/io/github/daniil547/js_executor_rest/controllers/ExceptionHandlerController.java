@@ -1,6 +1,7 @@
 package io.github.daniil547.js_executor_rest.controllers;
 
 import cz.jirutka.rsql.parser.RSQLParserException;
+import io.github.daniil547.js_executor_rest.util.HttpUtils;
 import org.graalvm.polyglot.PolyglotException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -35,11 +36,8 @@ public class ExceptionHandlerController implements ProblemHandling {
                            .build()
             );
         } else {
-            return ResponseEntity.internalServerError().body(
-                    Problem.builder()
-                           .withStatus(Status.INTERNAL_SERVER_ERROR)
-                           .build()
-            );
+            return ResponseEntity.internalServerError()
+                                 .body(HttpUtils.internalErrorNoDisclose());
         }
     }
 }
