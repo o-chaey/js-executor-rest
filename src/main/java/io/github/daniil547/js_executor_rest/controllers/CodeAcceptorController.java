@@ -40,7 +40,6 @@ import org.zalando.problem.Status;
 import javax.servlet.http.HttpServletResponse;
 import java.net.URI;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Predicate;
@@ -167,34 +166,28 @@ public class CodeAcceptorController {
     @Operation(summary = "get source code of the task, as was submitted",
                operationId = "get source")
     @GetMapping("{id}/source")
-    public ResponseEntity<RepresentationModel<?>> getTaskSource(@PathVariable UUID id) {
-        RepresentationModel<?> sourceAndLinks = taskReprAssembler.toModel(
-                Map.of("source", taskRepository.getTask(id).getSource()),
-                id
-        );
-        return ResponseEntity.ok(sourceAndLinks);
+    public ResponseEntity<String> getTaskSource(@PathVariable UUID id) {
+        String source = taskRepository.getTask(id).getSource();
+
+        return ResponseEntity.ok(source);
     }
 
     @Operation(summary = "get current or previous status of the task",
                operationId = "get status")
     @GetMapping("{id}/status")
-    public ResponseEntity<RepresentationModel<?>> getTaskStatus(@PathVariable UUID id) {
-        RepresentationModel<?> statusAndLinks = taskReprAssembler.toModel(
-                Map.of("status", taskRepository.getTask(id).getStatus()),
-                id
-        );
-        return ResponseEntity.ok(statusAndLinks);
+    public ResponseEntity<String> getTaskStatus(@PathVariable UUID id) {
+        LanguageTask.Status status = taskRepository.getTask(id).getStatus();
+
+        return ResponseEntity.ok(status.toString().toLowerCase());
     }
 
     @Operation(summary = "retrieve output produced by the task up to some \"recent\" moment in the past",
                operationId = "get output")
     @GetMapping("{id}/output")
-    public ResponseEntity<RepresentationModel<?>> getTaskOutput(@PathVariable UUID id) {
-        RepresentationModel<?> outputAndLinks = taskReprAssembler.toModel(
-                Map.of("output", taskRepository.getTask(id).getOutput()),
-                id
-        );
-        return ResponseEntity.ok(outputAndLinks);
+    public ResponseEntity<String> getTaskOutput(@PathVariable UUID id) {
+        String output = taskRepository.getTask(id).getOutput();
+
+        return ResponseEntity.ok(output);
     }
 
 
