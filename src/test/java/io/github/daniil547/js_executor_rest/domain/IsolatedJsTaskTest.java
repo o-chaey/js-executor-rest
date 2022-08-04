@@ -6,8 +6,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 
 public class IsolatedJsTaskTest {
     /**
@@ -20,19 +19,18 @@ public class IsolatedJsTaskTest {
      */
     @Test
     @DisplayName("execution must not block for its entire duration")
-    public void nonBlockingExecute() throws InterruptedException {
+    public void nonBlockingExecute() throws InterruptedException, ExecutionException {
         IsolatedJsTask task = new IsolatedJsTask("while (true) {console.log(\"hello\");}",
                                                  Long.MAX_VALUE);
-        ExecutorService executor = Executors.newSingleThreadExecutor();
+        ExecutorService executor = Executors.newFixedThreadPool(2);
         task.execute(executor);
 
-        Thread.sleep(10);
-
-        Thread stopper = new Thread(task::cancel);
-        stopper.start();
-
-        stopper.join(100);
-        Assertions.assertEquals(LanguageTask.Status.CANCELED,
-                                task.getStatus());
+        executor.submit(task::cancel).get();
+        try {
+            task.await(10, TimeUnit.MILLISECONDS);
+            Assertions.assertEquals(LanguageTask.Status.CANCELED, task.getStatus());
+        } catch (TimeoutException e) {
+            Assertions.fail("Task wasn't canceled and continued to run.", e);
+        }
     }
 }
