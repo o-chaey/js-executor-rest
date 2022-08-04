@@ -149,7 +149,10 @@ public class CodeAcceptorController {
             filter = rootNode.accept(rsqlToPredicateVisitor);
         }
         Pair<List<LanguageTask>, Integer> queryResult = taskRepository.getAllTasks(filter, paging);
-        List<TaskView> taskViews = queryResult.getFirst().stream().map(mapper::taskToView).toList();
+        List<TaskView> taskViews = queryResult.getFirst()
+                                              .stream()
+                                              .map(mapper::taskToViewShortenLongProps)
+                                              .toList();
         Page<TaskView> taskViewPage = new PageImpl<>(taskViews,
                                                      paging,
                                                      queryResult.getSecond());
