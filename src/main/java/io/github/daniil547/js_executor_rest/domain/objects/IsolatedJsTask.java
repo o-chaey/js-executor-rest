@@ -54,7 +54,6 @@ public class IsolatedJsTask implements LanguageTask {
     private final String sourceCode;
     private final AtomicReference<Status> currentStatus;
     private final ByteArrayOutputStream out;
-    private final OutputStream customOut;
     private final Source polyglotSource;
     private static final Logger logger = LoggerFactory.getLogger(IsolatedJsTask.class);
 
@@ -99,14 +98,14 @@ public class IsolatedJsTask implements LanguageTask {
             throw new AssertionError("private IsolatedJsTask(String, long, ByteArrayOutputStream, OutputStream)" +
                                      " used incorrectly: both output streams were null");
         }
-
+        @SuppressWarnings("squid:S125")
         Context.Builder builder =
                 Context.newBuilder(LANG)
                        .in(InputStream.nullInputStream())
                        // obviously, not a good idea to allow
                        .allowAllAccess(false)
                        // determines if context can access things like java arrays, iterators,
-                       // specific classes or classes annotated by particular annotations etc
+                       // specific classes or classes annotated by particular annotations etc.
                        // not restricted here
                        .allowHostAccess(HostAccess.ALL)
                        // filters classes by their fully qualified name
@@ -148,7 +147,6 @@ public class IsolatedJsTask implements LanguageTask {
                                              .build());
         if (defaultOut != null) {
             this.out = defaultOut;
-            this.customOut = null;
 
             BufferedOutputStream bufferedOut = new BufferedOutputStream(defaultOut);
             builder.out(bufferedOut)
@@ -158,7 +156,6 @@ public class IsolatedJsTask implements LanguageTask {
             outWriter = new PrintWriter(defaultOut, true);
         } else {
             this.out = null;
-            this.customOut = customOut;
 
             builder.out(customOut)
                    // removed because on context close Graal calls flush()
@@ -237,7 +234,7 @@ public class IsolatedJsTask implements LanguageTask {
      * <p>
      * So, naive approach seems to be a good tradeoff between effect (precision) and complexity.
      *
-     * @return
+     * @return time elapsed between task start and end (or the moment of call for running tasks)
      */
     @Override
     public Optional<Duration> getDuration() {
@@ -372,7 +369,7 @@ public class IsolatedJsTask implements LanguageTask {
      * <p>
      * Beside changing the {@link #currentStatus} to {@link Status#CANCELED},
      * this method also closes the context and output streams, determines end time,
-     * prints the fact of cancelation
+     * prints the fact of cancellation
      */
     @Override
     public void cancel() {

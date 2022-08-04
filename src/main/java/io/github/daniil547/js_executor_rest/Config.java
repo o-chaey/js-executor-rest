@@ -36,6 +36,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+@SuppressWarnings("unused")
 @Configuration
 @EnableHypermediaSupport(stacks = WebStack.WEBMVC,
                          type = EnableHypermediaSupport.HypermediaType.HAL_FORMS)
@@ -66,7 +67,6 @@ public class Config implements WebMvcConfigurer {
     @SuppressWarnings({"squid:S2293", "Convert2Diamond"})
     public ExecutorService threadPool() {
         int threads;
-        System.out.println(parallelism);
         if (parallelism > 0) {
             threads = parallelism;
         } else if (parallelism < 0) {

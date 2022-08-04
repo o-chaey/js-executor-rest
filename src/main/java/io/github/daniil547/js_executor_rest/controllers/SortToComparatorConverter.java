@@ -15,6 +15,11 @@ public class SortToComparatorConverter<T> {
 
     public SortToComparatorConverter(Map<String, MethodHandle> propertyRegistry) {this.propertyRegistry = propertyRegistry;}
 
+    // despite the suppression, in the future some task property might not implement Comparable
+    // but this also would have to be dealt with by adding restrictions to the API docs
+    // ("you cannot sort by X") or implementing Comparable for the property (or wrapper)
+    // also instanceof check here messes up generics
+    @SuppressWarnings("unchecked")
     @Nullable
     public Comparator<T> sortToComparator(Sort sort) {
         Optional<Comparator<T>> taskViewComparator =

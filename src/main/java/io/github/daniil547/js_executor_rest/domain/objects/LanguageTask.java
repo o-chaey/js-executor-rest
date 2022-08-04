@@ -23,7 +23,7 @@ public interface LanguageTask {
     /**
      * Represents state of task's execution.
      */
-    public static enum Status {
+    enum Status {
         /**
          * The task is, or being, created, submitted to an
          * {@link java.util.concurrent.ExecutorService} and waiting in
@@ -45,7 +45,7 @@ public interface LanguageTask {
          * no errors will be thrown etc. In other words, the task's
          * object must not be mutated. <br>
          */
-        FINISHED;
+        FINISHED
     }
 
 
@@ -76,7 +76,7 @@ public interface LanguageTask {
      * <p>
      * If previously invoked {@link #getStatus()} returned {@link Status#RUNNING},
      * then returned data represents output at some point during the task's
-     * execution or after it's finished. <br>
+     * execution, or after it's finished. <br>
      * If {@link #getStatus()} returned {@link Status#FINISHED}, then returned
      * data must not change.
      *

@@ -11,6 +11,7 @@ import org.zalando.problem.Status;
 import org.zalando.problem.ThrowableProblem;
 import org.zalando.problem.spring.web.advice.ProblemHandling;
 
+@SuppressWarnings("unused")
 @RestControllerAdvice
 public class ExceptionHandlerController implements ProblemHandling {
 

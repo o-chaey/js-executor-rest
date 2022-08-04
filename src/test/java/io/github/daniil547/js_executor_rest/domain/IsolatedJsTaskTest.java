@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.*;
 
-public class IsolatedJsTaskTest {
+class IsolatedJsTaskTest {
     /**
      * If execution blocks on the task itself, it
      * is impossible to cancel it, which is invalid
@@ -19,7 +19,7 @@ public class IsolatedJsTaskTest {
      */
     @Test
     @DisplayName("execution must not block for its entire duration")
-    public void nonBlockingExecute() throws InterruptedException, ExecutionException {
+    void nonBlockingExecute() throws InterruptedException, ExecutionException {
         IsolatedJsTask task = new IsolatedJsTask("while (true) {console.log(\"hello\");}",
                                                  Long.MAX_VALUE);
         ExecutorService executor = Executors.newFixedThreadPool(2);

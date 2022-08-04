@@ -88,7 +88,6 @@ public class CodeAcceptorController {
     @Operation(
             summary = "get all available info about all the tasks (except deleted)",
             operationId = "get all",
-            description = "",
             parameters = {
                     @Parameter(
                             name = "filter",
@@ -133,7 +132,6 @@ public class CodeAcceptorController {
             String query,
             @Parameter(hidden = true)
             Pageable paging,
-            @SuppressWarnings("ConstantConditions") // injected by Spring, should never be null
             @Parameter(hidden = true)
             PagedResourcesAssembler<TaskView> pagedResAssembler
     ) {

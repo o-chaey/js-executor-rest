@@ -12,6 +12,7 @@ import org.springframework.hateoas.mediatype.Affordances;
 import org.springframework.hateoas.mediatype.ConfigurableAffordance;
 import org.springframework.hateoas.server.SimpleRepresentationModelAssembler;
 import org.springframework.http.HttpMethod;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -22,9 +23,10 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @Component
+@SuppressWarnings("squid:S1452")
 public class TaskViewRepresentationModelAssembler implements SimpleRepresentationModelAssembler<TaskView> {
     public static final PatchTaskDto CANCEL_PATCH = new PatchTaskDto(LanguageTask.Status.CANCELED);
-    private final Class<CodeAcceptorController> controller = CodeAcceptorController.class;
+    private static final Class<CodeAcceptorController> controller = CodeAcceptorController.class;
 
     public <T> RepresentationModel<?> toModel(T value, UUID taskId) {
 
@@ -42,6 +44,10 @@ public class TaskViewRepresentationModelAssembler implements SimpleRepresentatio
     @Override
     public void addLinks(EntityModel<TaskView> resource) {
         TaskView taskView = resource.getContent();
+        if (taskView == null) {
+            throw new AssertionError("EntityModel<TaskView> must not be empty," +
+                                     " use RepresentationModel for that");
+        }
         UUID id = taskView.id();
         doAddLinks(resource, id);
     }
@@ -105,9 +111,10 @@ public class TaskViewRepresentationModelAssembler implements SimpleRepresentatio
 
     }
 
-
     @Override
-    public void addLinks(CollectionModel<EntityModel<TaskView>> resources) {
-
+    public void addLinks(@NonNull CollectionModel<EntityModel<TaskView>> resources) {
+        // unneeded for this impl
+        // but just for safety:
+        throw new AssertionError("Not implemented");
     }
 }

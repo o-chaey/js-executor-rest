@@ -12,10 +12,10 @@ public interface TaskToViewMapper {
      * Exclusive
      */
     @SuppressWarnings("unused")
-    public static final int TRIM_TO_LENGTH = 32;
+    int TRIM_TO_LENGTH = 32;
 
     @SuppressWarnings("unused")
-    public static String trimIfTooLong(String str) {
+    static String trimIfTooLong(String str) {
         return str.length() > TaskToViewMapper.TRIM_TO_LENGTH
                ? str.substring(0, 32) + "..."
                : str;

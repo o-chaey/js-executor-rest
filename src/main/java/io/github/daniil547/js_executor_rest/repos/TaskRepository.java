@@ -9,12 +9,14 @@ import java.util.UUID;
 import java.util.function.Predicate;
 
 public interface TaskRepository {
-    public LanguageTask storeTask(LanguageTask task);
+
+    @SuppressWarnings("UnusedReturnValue")
+    LanguageTask storeTask(LanguageTask task);
 
     LanguageTask getTask(UUID id);
 
-    public void deleteTask(UUID id);
+    void deleteTask(UUID id);
 
     // Predicate isn't the best choice, a dedicated interface would've been better
-    public Pair<List<LanguageTask>, Integer> getAllTasks(Predicate<LanguageTask> filter, Pageable paging);
+    Pair<List<LanguageTask>, Integer> getAllTasks(Predicate<LanguageTask> filter, Pageable paging);
 }
