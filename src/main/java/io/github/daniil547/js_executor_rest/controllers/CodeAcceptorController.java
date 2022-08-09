@@ -8,6 +8,7 @@ import io.github.daniil547.js_executor_rest.dtos.PatchTaskDto;
 import io.github.daniil547.js_executor_rest.dtos.TaskView;
 import io.github.daniil547.js_executor_rest.mappers.TaskToViewMapper;
 import io.github.daniil547.js_executor_rest.repos.TaskRepository;
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -15,6 +16,7 @@ import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.servers.Server;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -55,11 +57,15 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
  */
 
 @SuppressWarnings({"squid:S1452", "unused"})
+@OpenAPIDefinition(
+        servers = {@Server(url = "http://localhost:8080/"),
+                   @Server(url = "http://127.0.0.1:8080/")
+        }
+)
 @Tag(name = "JS Executor", description = "Service for remote execution of JS code")
 @RestController
 @RequestMapping("/tasks/")
 public class CodeAcceptorController {
-
     private final TaskRepository taskRepository;
     private final Long statementLimit;
     private final RSQLParser rsqlParser;
