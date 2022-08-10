@@ -1,0 +1,25 @@
+# suppress inspection "UnusedProperty" for whole file
+task-execution:
+  # negative value is a percent of available processors (default is a half)
+  # positive is literal number of threads
+  # mustn't be 0
+  parallelism: -50
+  await-termination-for-ms: 1
+  # limits maximum statements executed by a single task
+  # indirectly limits RAM and CPU usage
+  # the only resource limit supported on GraalVM Community Edition
+  # (and the only stable one in all editions)
+  statementLimit: 1000000000000000000
+  # suppress inspection "UnusedProperty"
+springdoc:
+  swagger-ui:
+    displayOperationId: true
+spring:
+  mvc:
+    async:
+      request-timeout: 3600000
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
