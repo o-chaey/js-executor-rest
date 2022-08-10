@@ -16,9 +16,13 @@ public interface TaskToViewMapper {
 
     @SuppressWarnings("unused")
     static String trimIfTooLong(String str) {
-        return str.length() > TaskToViewMapper.TRIM_TO_LENGTH
-               ? str.substring(0, 32) + "..."
-               : str;
+        if (str != null) {
+            return str.length() > TaskToViewMapper.TRIM_TO_LENGTH
+                   ? str.substring(0, 32) + "..."
+                   : str;
+        } else {
+            return null;
+        }
     }
 
     TaskView taskToView(LanguageTask task);
