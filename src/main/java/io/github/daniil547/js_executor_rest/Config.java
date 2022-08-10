@@ -69,11 +69,12 @@ public class Config implements WebMvcConfigurer {
         int threads;
         if (parallelism > 0) {
             threads = parallelism;
-        } else if (parallelism < 0) {
+        } else if (parallelism < 0 && parallelism >= -100) {
             int jvmProcs = Runtime.getRuntime().availableProcessors();
             threads = (int) Math.ceil(jvmProcs * ((float) -parallelism / (float) 100));
         } else {
-            throw new IllegalArgumentException("Parallelism must not be 0");
+            throw new IllegalArgumentException(
+                    "Parallelism must within [-100..-1] ∪ [1..Integer.MAX_VALUE], but was: " + parallelism);
         }
         return  // same as Executors.newFixedThreadPool(threads)
                 // just declares a @PreDestroy method

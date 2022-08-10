@@ -2,7 +2,7 @@
 task-execution:
   # negative value is a percent of available processors (default is a half)
   # positive is literal number of threads
-  # mustn't be 0
+  # allowed values: [-100..-1] ∪ [1..Integer.MAX_VALUE]
   parallelism: -50
   await-termination-for-ms: 1
   # limits maximum statements executed by a single task
