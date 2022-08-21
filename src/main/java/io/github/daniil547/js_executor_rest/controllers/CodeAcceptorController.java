@@ -12,10 +12,13 @@ import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
+import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import io.swagger.v3.oas.annotations.servers.Server;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,10 +60,16 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
  */
 
 @SuppressWarnings({"squid:S1452", "unused"})
+@SecurityRequirement(name = "Authorization")
 @OpenAPIDefinition(
-        servers = {@Server(url = "http://localhost:8080/"),
-                   @Server(url = "http://127.0.0.1:8080/")
-        }
+        servers = {@Server(url = "https://localhost:8080/"),
+                   @Server(url = "https://127.0.0.1:8080/")
+        },
+        security = @SecurityRequirement(name = "Authorization")
+)
+@SecurityScheme(name = "Authorization",
+                type = SecuritySchemeType.OPENIDCONNECT,
+                openIdConnectUrl = "https://localhost:8081/realms/JsExecutor/.well-known/openid-configuration"
 )
 @Tag(name = "JS Executor", description = "Service for remote execution of JS code")
 @RestController
@@ -197,7 +206,6 @@ public class CodeAcceptorController {
         return ResponseEntity.ok(output);
     }
 
-
     @Operation(
             summary = "create a task by sending source as plain text",
             operationId = "create",
@@ -208,7 +216,10 @@ public class CodeAcceptorController {
                             mediaType = "text/plain",
                             examples = {@ExampleObject("console.log(\"Hello, World!\");")}
                     )
-            ))
+            ),
+            security = @SecurityRequirement(name = "keycloack-auth",
+                                            scopes = "swagger")
+    )
     @PostMapping(consumes = MediaType.TEXT_PLAIN_VALUE)
     public ResponseEntity<RepresentationModel<?>> newTask(@RequestBody String source) {
         IsolatedJsTask newTask = new IsolatedJsTask(source, statementLimit);

@@ -88,23 +88,23 @@ public class TaskViewRepresentationModelAssembler implements SimpleRepresentatio
 
                 // NOTE 2: Spring HATEOAS currently forces the name "default"
                 // onto the first affordance. That is dumb as well, and has no workaround.
-                affsOnSelfResource.toLink(),
+                affsOnSelfResource.toLink()//,
                 // and thу following are sub-resources
-                Affordances.of(
-                                   linkTo(methodOn(controller).getTaskSource(id)).withRel(mainRel + ".source"))
-                           .afford(HttpMethod.GET)
-                           .withName("getTaskSource")
-                           .toLink(),
-                Affordances.of(
-                                   linkTo(methodOn(controller).getTaskStatus(id)).withRel(mainRel + ".status"))
-                           .afford(HttpMethod.GET)
-                           .withName("getTaskStatus")
-                           .toLink(),
-                Affordances.of(
-                                   linkTo(methodOn(controller).getTaskOutput(id)).withRel(mainRel + ".output"))
-                           .afford(HttpMethod.GET)
-                           .withName("getTaskOutput")
-                           .toLink()
+                //                Affordances.of(
+                //                                   linkTo(methodOn(controller).getTaskSource(id)).withRel(mainRel + ".source"))
+                //                           .afford(HttpMethod.GET)
+                //                           .withName("getTaskSource")
+                //                           .toLink(),
+                //                Affordances.of(
+                //                                   linkTo(methodOn(controller).getTaskStatus(id)).withRel(mainRel + ".status"))
+                //                           .afford(HttpMethod.GET)
+                //                           .withName("getTaskStatus")
+                //                           .toLink(),
+                //                Affordances.of(
+                //                                   linkTo(methodOn(controller).getTaskOutput(id)).withRel(mainRel + ".output"))
+                //                           .afford(HttpMethod.GET)
+                //                           .withName("getTaskOutput")
+                //                           .toLink()
         );
         resource.add(linksAndAffs);
 

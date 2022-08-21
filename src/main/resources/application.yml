@@ -10,11 +10,20 @@ task-execution:
   # the only resource limit supported on GraalVM Community Edition
   # (and the only stable one in all editions)
   statementLimit: 1000000000000000000
-  # suppress inspection "UnusedProperty"
 springdoc:
   swagger-ui:
     displayOperationId: true
+    oauth:
+      realm: JsExecutor
+      clientId: swagger-ui-local
+      # !clientSecret property is for dev/test environment only!
+      clientSecret: SPhAtEWpKUg5hQrlC67mg25Wo13uLgtp
 spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://localhost:8081/realms/JsExecutor
   mvc:
     async:
       request-timeout: 3600000
@@ -23,3 +32,24 @@ management:
     web:
       exposure:
         include: "*"
+server:
+  port: 8080
+  ssl:
+    enabled: true
+    key-alias: tomcat-localhost
+    key-password: password
+    key-store: classpath:js-executor-key-store.p12
+    key-store-password: password
+    key-store-provider: SUN
+    key-store-type: JKS
+    # trust-store property here isn't mapped to javax.net.ssl.trustStore but is used by Spring for something else
+  # so we define a custom property ourselves and use it in io.github.daniil547.js_executor_rest.SecurityConfig#configureSSL()
+  javax:
+    net:
+      ssl:
+        # classpath:truststore.jks doesn't work for whatever reason
+        trust-store: src/main/resources/truststore.jks
+        trust-store-password: password
+        trust-store-provider: SUN
+        trust-store-type: JKS
+

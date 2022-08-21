@@ -1,8 +1,9 @@
 # Created by https://www.toptal.com/developers/gitignore/api/java,intellij+all,maven
 # Edit at https://www.toptal.com/developers/gitignore?templates=java,intellij+all,maven
 
-### Project-spcific stuff###
-logs
+### Project-spcific stuff ###
+logs/
+external-res/db-data/
 
 
 ### Intellij+all ###
