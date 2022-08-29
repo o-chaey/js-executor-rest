@@ -48,6 +48,10 @@ public interface LanguageTask {
         FINISHED
     }
 
+    /**
+     * @return task's owner
+     */
+    User getOwner();
 
     /**
      * @return task's ID

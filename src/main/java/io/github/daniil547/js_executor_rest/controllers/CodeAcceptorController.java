@@ -2,8 +2,10 @@ package io.github.daniil547.js_executor_rest.controllers;
 
 import cz.jirutka.rsql.parser.RSQLParser;
 import cz.jirutka.rsql.parser.ast.Node;
+import io.github.daniil547.js_executor_rest.domain.objects.DefaultUser;
 import io.github.daniil547.js_executor_rest.domain.objects.IsolatedJsTask;
 import io.github.daniil547.js_executor_rest.domain.objects.LanguageTask;
+import io.github.daniil547.js_executor_rest.domain.objects.User;
 import io.github.daniil547.js_executor_rest.dtos.PatchTaskDto;
 import io.github.daniil547.js_executor_rest.dtos.TaskView;
 import io.github.daniil547.js_executor_rest.mappers.TaskToViewMapper;
@@ -21,12 +23,15 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import io.swagger.v3.oas.annotations.servers.Server;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
+import org.springframework.data.util.Predicates;
 import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.PagedModel;
@@ -36,6 +41,10 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -44,6 +53,7 @@ import org.zalando.problem.Status;
 
 import javax.servlet.http.HttpServletResponse;
 import java.net.URI;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
@@ -75,6 +85,9 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @RestController
 @RequestMapping("/tasks/")
 public class CodeAcceptorController {
+    private static final Logger logger = LoggerFactory.getLogger(CodeAcceptorController.class);
+    public static final SimpleGrantedAuthority ADMIN_ROLE_SCOPE = new SimpleGrantedAuthority("SCOPE_app_admin");
+    public static final SimpleGrantedAuthority APP_SCOPE = new SimpleGrantedAuthority("SCOPE_app");
     private final TaskRepository taskRepository;
     private final Long statementLimit;
     private final RSQLParser rsqlParser;
@@ -156,10 +169,16 @@ public class CodeAcceptorController {
                          .withDetail("Paging must not be null")
                          .build();
         }
-        Predicate<LanguageTask> filter = null;
+        Predicate<LanguageTask> filter;
         if (query != null && !query.isBlank()) {
             Node rootNode = rsqlParser.parse(query);
             filter = rootNode.accept(rsqlToPredicateVisitor);
+        } else {
+            filter = Predicates.isTrue();
+        }
+        var user = currentUser();
+        if (user.getRole() != User.Role.ADMIN) {
+            filter = filter.and(task -> task.getOwner().getId().equals(user.getId()));
         }
         Pair<List<LanguageTask>, Integer> queryResult = taskRepository.getAllTasks(filter, paging);
         List<TaskView> taskViews = queryResult.getFirst()
@@ -176,14 +195,15 @@ public class CodeAcceptorController {
                operationId = "get")
     @GetMapping("{id}/")
     public ResponseEntity<EntityModel<TaskView>> getTask(@PathVariable UUID id) {
-        return ResponseEntity.ok(taskReprAssembler.toModel(mapper.taskToView(taskRepository.getTask(id))));
+        var task = checkCurrentUserAuthorizedAndGet(id);
+        return ResponseEntity.ok(taskReprAssembler.toModel(mapper.taskToView(task)));
     }
 
     @Operation(summary = "get source code of the task, as was submitted",
                operationId = "get source")
     @GetMapping("{id}/source")
     public ResponseEntity<String> getTaskSource(@PathVariable UUID id) {
-        String source = taskRepository.getTask(id).getSource();
+        String source = checkCurrentUserAuthorizedAndGet(id).getSource();
 
         return ResponseEntity.ok(source);
     }
@@ -192,7 +212,7 @@ public class CodeAcceptorController {
                operationId = "get status")
     @GetMapping("{id}/status")
     public ResponseEntity<String> getTaskStatus(@PathVariable UUID id) {
-        LanguageTask.Status status = taskRepository.getTask(id).getStatus();
+        LanguageTask.Status status = checkCurrentUserAuthorizedAndGet(id).getStatus();
 
         return ResponseEntity.ok(status.toString().toLowerCase());
     }
@@ -201,7 +221,7 @@ public class CodeAcceptorController {
                operationId = "get output")
     @GetMapping("{id}/output")
     public ResponseEntity<String> getTaskOutput(@PathVariable UUID id) {
-        String output = taskRepository.getTask(id).getOutput();
+        String output = checkCurrentUserAuthorizedAndGet(id).getOutput();
 
         return ResponseEntity.ok(output);
     }
@@ -222,7 +242,7 @@ public class CodeAcceptorController {
     )
     @PostMapping(consumes = MediaType.TEXT_PLAIN_VALUE)
     public ResponseEntity<RepresentationModel<?>> newTask(@RequestBody String source) {
-        IsolatedJsTask newTask = new IsolatedJsTask(source, statementLimit);
+        IsolatedJsTask newTask = new IsolatedJsTask(source, statementLimit, currentUser());
         newTask.execute(threadPool);
         taskRepository.storeTask(newTask);
 
@@ -249,7 +269,7 @@ public class CodeAcceptorController {
     public ResponseEntity<StreamingResponseBody> newTaskStream(@RequestBody String source,
                                                                HttpServletResponse response) {
         StreamingResponseBody srb = out -> {
-            IsolatedJsTask task = new IsolatedJsTask(source, statementLimit, out);
+            IsolatedJsTask task = new IsolatedJsTask(source, statementLimit, out, currentUser());
             response.addHeader(
                     HttpHeaders.LOCATION,
                     getTaskLocation(task).toString().replace("/stream/", "/")
@@ -271,7 +291,8 @@ public class CodeAcceptorController {
             @PathVariable UUID id,
             @RequestBody PatchTaskDto patch
     ) {
-        taskRepository.getTask(id).cancel();
+        checkCurrentUserAuthorizedAndGet(id).cancel();
+
         return ResponseEntity.ok(taskReprAssembler.toModel(id));
     }
 
@@ -279,7 +300,12 @@ public class CodeAcceptorController {
                operationId = "delete")
     @DeleteMapping("{id}")
     public ResponseEntity<RepresentationModel<?>> removeTask(@PathVariable UUID id) {
-        taskRepository.deleteTask(id);
+        LanguageTask task = checkCurrentUserAuthorizedAndGet(id);
+        LanguageTask.Status status = task.getStatus();
+        if (status == LanguageTask.Status.FINISHED
+            || status == LanguageTask.Status.CANCELED) {
+            taskRepository.deleteTask(id);
+        }
         return ResponseEntity.ok(RepresentationModel.of(null).add(
                                          Affordances.of(linkTo(methodOn(CodeAcceptorController.class)
                                                                        .newTask("")).withRel("collection"))
@@ -290,6 +316,48 @@ public class CodeAcceptorController {
                                                     .toLink()
                                  )
         );
+    }
+
+    private LanguageTask checkCurrentUserAuthorizedAndGet(UUID taskId) {
+        User user = currentUser();
+        var task = taskRepository.getTask(taskId);
+        User owner = task.getOwner();
+        if (user.getRole() == User.Role.ADMIN
+            || owner.getId()
+                    .equals(user.getId())) {
+            return task;
+        } else {
+            throw new AccessDeniedException("User " + user.getId() + " isn't authorized to access this resource");
+        }
+    }
+
+    private static User currentUser() {
+        var authen = SecurityContextHolder.getContext().getAuthentication();
+        // Not the best way to determine privilege level, but here it's
+        // restricted buy how things are implemented in KC and Spring/
+        // One of better ways is to put the role into claims of the token
+        // (role attribute in KC) but KC doesn't always do this.
+        // Another way is to use KC's SCOPE_roles, which puts all user's role into claims,
+        // but it buries them deep within token's JSON, which is really messy to traverse
+        // because Spring represents it as Map<String, Object>
+
+        User.Role role;
+        Collection<? extends GrantedAuthority> authorities = authen.getAuthorities();
+        // currently O(n) as it's impl is a list
+        // but it should be possible to configure Spring to pack Authorities in e.g. a HashSet
+        if (authorities.contains(APP_SCOPE)) {
+            if (authorities.contains(ADMIN_ROLE_SCOPE)) {
+                role = User.Role.ADMIN;
+            } else {
+                role = User.Role.USER;
+            }
+        } else {
+            // unlikely as SCOPE_app is given by default
+            throw new AccessDeniedException("User doesn't have access to the app.");
+        }
+
+        String name = authen.getName();
+        return new DefaultUser(UUID.fromString(name), role);
     }
 
 

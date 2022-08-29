@@ -44,7 +44,10 @@ public class SecurityConfig {
             .and()
 
             .authorizeRequests()
-            .mvcMatchers("/tasks/*").hasAuthority("SCOPE_swagger")
+            .mvcMatchers("/tasks/*").hasAnyAuthority(
+                    // hypothetically, swagger isn't the only possible client
+                    // doesn't really matter for our needs, though
+                    "SCOPE_swagger", "SCOPE_app")
             .and()
 
             .csrf()

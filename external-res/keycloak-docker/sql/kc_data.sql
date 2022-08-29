@@ -3,7 +3,7 @@
 --
 
 -- Dumped from database version 14.5 (Debian 14.5-1.pgdg110+1)
--- Dumped by pg_dump version 14.5 (Debian 14.5-1.pgdg110+1)
+-- Dumped by pg_dump version 14.3
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -1664,7 +1664,7 @@ ee3cb8e7-1f63-47c3-973c-2c7a1427095c	t	f	account	0	t	\N	/realms/JsExecutor/accou
 008d1d7c-6622-4f57-9b63-6ba9bc55d1d9	t	f	broker	0	f	\N	\N	t	\N	f	80229060-53a8-4a28-bfc4-ceebabe05d64	openid-connect	0	f	f	${client_broker}	f	client-secret	\N	\N	\N	t	f	f	f
 0466602c-8f11-4581-b7e4-d01932dd42df	t	f	security-admin-console	0	t	\N	/admin/JsExecutor/console/	f	\N	f	80229060-53a8-4a28-bfc4-ceebabe05d64	openid-connect	0	f	f	${client_security-admin-console}	f	client-secret	${authAdminUrl}	\N	\N	t	f	f	f
 627811f1-1819-493d-9513-95b7b688aafb	t	f	admin-cli	0	t	\N	\N	f	\N	f	80229060-53a8-4a28-bfc4-ceebabe05d64	openid-connect	0	f	f	${client_admin-cli}	f	client-secret	\N	\N	\N	f	f	t	f
-646226dc-1492-41e1-afcb-b398abd036bd	t	t	swagger-ui-local	0	f	SPhAtEWpKUg5hQrlC67mg25Wo13uLgtp	https://localhost:8080/swagger-ui/index.html	f		f	80229060-53a8-4a28-bfc4-ceebabe05d64	openid-connect	-1	t	f	Swagger Local	f	client-secret	https://localhost:8080/		\N	t	f	f	t
+646226dc-1492-41e1-afcb-b398abd036bd	t	t	swagger-ui-local	0	f	SPhAtEWpKUg5hQrlC67mg25Wo13uLgtp	https://localhost:8080/swagger-ui/index.html	f		f	80229060-53a8-4a28-bfc4-ceebabe05d64	openid-connect	-1	t	f	Swagger Local	t	client-secret	https://localhost:8080/		\N	t	f	f	t
 \.
 
 
@@ -1743,6 +1743,8 @@ cb45d198-cf9c-4b54-a821-17bd1452dfab	email	80229060-53a8-4a28-bfc4-ceebabe05d64	
 69a5e293-0504-4453-a2ae-bd3c35422ac2	microprofile-jwt	80229060-53a8-4a28-bfc4-ceebabe05d64	Microprofile - JWT built-in scope	openid-connect
 92161823-edea-4df2-ab3b-7923c06d9fea	acr	80229060-53a8-4a28-bfc4-ceebabe05d64	OpenID Connect scope for add acr (authentication context class reference) to the token	openid-connect
 b16307a7-dadb-45e5-bf6a-09ceeb7fe75d	swagger	80229060-53a8-4a28-bfc4-ceebabe05d64		openid-connect
+16c0ac5d-0ab4-425c-9ffc-bcd2c04caed0	app_admin	80229060-53a8-4a28-bfc4-ceebabe05d64		openid-connect
+b5704760-278f-49af-adb7-efb002023c2f	app	80229060-53a8-4a28-bfc4-ceebabe05d64		openid-connect
 \.
 
 
@@ -1807,6 +1809,13 @@ b16307a7-dadb-45e5-bf6a-09ceeb7fe75d		consent.screen.text
 b16307a7-dadb-45e5-bf6a-09ceeb7fe75d	true	display.on.consent.screen
 b16307a7-dadb-45e5-bf6a-09ceeb7fe75d	true	include.in.token.scope
 b16307a7-dadb-45e5-bf6a-09ceeb7fe75d		gui.order
+16c0ac5d-0ab4-425c-9ffc-bcd2c04caed0	false	display.on.consent.screen
+16c0ac5d-0ab4-425c-9ffc-bcd2c04caed0	true	include.in.token.scope
+16c0ac5d-0ab4-425c-9ffc-bcd2c04caed0		gui.order
+b5704760-278f-49af-adb7-efb002023c2f		consent.screen.text
+b5704760-278f-49af-adb7-efb002023c2f	true	display.on.consent.screen
+b5704760-278f-49af-adb7-efb002023c2f	true	include.in.token.scope
+b5704760-278f-49af-adb7-efb002023c2f		gui.order
 \.
 
 
@@ -1927,12 +1936,14 @@ ee3cb8e7-1f63-47c3-973c-2c7a1427095c	46d7b3e7-31e6-4023-ab99-fcfdc770a997	f
 646226dc-1492-41e1-afcb-b398abd036bd	92161823-edea-4df2-ab3b-7923c06d9fea	t
 646226dc-1492-41e1-afcb-b398abd036bd	cb45d198-cf9c-4b54-a821-17bd1452dfab	t
 646226dc-1492-41e1-afcb-b398abd036bd	7f755b10-af77-4d7c-9ca7-f46a179d86ef	t
-646226dc-1492-41e1-afcb-b398abd036bd	1a89ce96-08ac-4636-8487-6173ad97b4f4	t
 646226dc-1492-41e1-afcb-b398abd036bd	42a22ce4-c6c8-44e8-8191-206ad6afe765	f
 646226dc-1492-41e1-afcb-b398abd036bd	69a5e293-0504-4453-a2ae-bd3c35422ac2	f
 646226dc-1492-41e1-afcb-b398abd036bd	865cb18b-4d01-4b1b-bd13-3b903efe7e1c	f
 646226dc-1492-41e1-afcb-b398abd036bd	46d7b3e7-31e6-4023-ab99-fcfdc770a997	f
+646226dc-1492-41e1-afcb-b398abd036bd	1a89ce96-08ac-4636-8487-6173ad97b4f4	t
 646226dc-1492-41e1-afcb-b398abd036bd	b16307a7-dadb-45e5-bf6a-09ceeb7fe75d	t
+646226dc-1492-41e1-afcb-b398abd036bd	16c0ac5d-0ab4-425c-9ffc-bcd2c04caed0	t
+646226dc-1492-41e1-afcb-b398abd036bd	b5704760-278f-49af-adb7-efb002023c2f	t
 \.
 
 
@@ -1943,6 +1954,11 @@ ee3cb8e7-1f63-47c3-973c-2c7a1427095c	46d7b3e7-31e6-4023-ab99-fcfdc770a997	f
 COPY public.client_scope_role_mapping (scope_id, role_id) FROM stdin;
 d3996c34-1f91-4652-a309-b014fd1fc37b	08190870-0bbc-4b26-b075-c874be0bddbc
 42a22ce4-c6c8-44e8-8191-206ad6afe765	1a723420-63dc-43cf-9cca-4b9155939561
+b16307a7-dadb-45e5-bf6a-09ceeb7fe75d	aad89f55-21f9-4284-82b5-6dfd3e0b5bfd
+16c0ac5d-0ab4-425c-9ffc-bcd2c04caed0	aad89f55-21f9-4284-82b5-6dfd3e0b5bfd
+b16307a7-dadb-45e5-bf6a-09ceeb7fe75d	5a9a8bac-c79f-4f93-b170-06e42885f9e4
+16c0ac5d-0ab4-425c-9ffc-bcd2c04caed0	a4068e6e-8f49-47b0-aa74-d261b33be10a
+b5704760-278f-49af-adb7-efb002023c2f	5a9a8bac-c79f-4f93-b170-06e42885f9e4
 \.
 
 
@@ -2023,7 +2039,7 @@ b81f47e5-2535-40b2-b0a8-51936b27d4d8	Allowed Protocol Mapper Types	80229060-53a8
 fe556759-6091-49c9-9e16-3b3257a69594	Allowed Client Scopes	80229060-53a8-4a28-bfc4-ceebabe05d64	allowed-client-templates	org.keycloak.services.clientregistration.policy.ClientRegistrationPolicy	80229060-53a8-4a28-bfc4-ceebabe05d64	anonymous
 42ca28c9-d589-46d8-9c4a-a1f3134463cb	Allowed Protocol Mapper Types	80229060-53a8-4a28-bfc4-ceebabe05d64	allowed-protocol-mappers	org.keycloak.services.clientregistration.policy.ClientRegistrationPolicy	80229060-53a8-4a28-bfc4-ceebabe05d64	authenticated
 26f42861-d6ce-440d-911d-a04f542e6066	Allowed Client Scopes	80229060-53a8-4a28-bfc4-ceebabe05d64	allowed-client-templates	org.keycloak.services.clientregistration.policy.ClientRegistrationPolicy	80229060-53a8-4a28-bfc4-ceebabe05d64	authenticated
-1d95d423-d5aa-4926-be9d-becaaeb94aa5	\N	80229060-53a8-4a28-bfc4-ceebabe05d64	declarative-user-profile	org.keycloak.userprofile.UserProfileProvider	80229060-53a8-4a28-bfc4-ceebabe05d64	\N
+38948a36-7755-432e-8a2d-051ea7404cfc	\N	80229060-53a8-4a28-bfc4-ceebabe05d64	declarative-user-profile	org.keycloak.userprofile.UserProfileProvider	80229060-53a8-4a28-bfc4-ceebabe05d64	\N
 \.
 
 
@@ -2190,6 +2206,8 @@ d75823db-40d7-40f1-960a-679d4df2df1c	d8d1e63e-9eb0-40f6-bc46-cc9b3e941c71
 f44f8fdf-2936-45aa-b9ca-949c57694e46	42010b73-1b88-42c4-b242-2bcb55af0cba
 9d8a0bfa-adbb-43ff-838e-01b3c15f334c	1a723420-63dc-43cf-9cca-4b9155939561
 9d8a0bfa-adbb-43ff-838e-01b3c15f334c	2bdef8e1-d7c6-4e0a-ae0f-035923df2758
+9d8a0bfa-adbb-43ff-838e-01b3c15f334c	bbebcd31-327a-419b-a463-8e2fd46c9c53
+9d8a0bfa-adbb-43ff-838e-01b3c15f334c	5a9a8bac-c79f-4f93-b170-06e42885f9e4
 \.
 
 
@@ -2199,7 +2217,9 @@ f44f8fdf-2936-45aa-b9ca-949c57694e46	42010b73-1b88-42c4-b242-2bcb55af0cba
 
 COPY public.credential (id, salt, type, user_id, created_date, user_label, secret_data, credential_data, priority) FROM stdin;
 942d4d82-bc6d-41a7-a1df-12ac9a1e1154	\N	password	45a3abe7-4853-44f0-bbe5-c5dd013af39c	1660561017007	\N	{"value":"6brkKvcuAGDUMttDkNSA97nYWE3z91gmhfK1M+4lewnoSuee4IlLSJLX0locLLUm+5Op1L1tPfDNd2bzOPcuZw==","salt":"CBRRs4bnjX+ovRUne6idKg==","additionalParameters":{}}	{"hashIterations":27500,"algorithm":"pbkdf2-sha256","additionalParameters":{}}	10
-9f0811be-134a-47b1-b65b-2dafd04b0c27	\N	password	180c5acf-8bff-495e-9a51-de0412edc61f	1660562987228	My password	{"value":"G5CGQCMXHRB/iLHZjjQywmyWBvsY8cjpMpJx0KFm9wuUBGMMVw2Ta7UjlgEYa/yxjP9ZgW+kQe2q4xqsiDPBWw==","salt":"6bxMLISXk+Oxqpi65z8Vag==","additionalParameters":{}}	{"hashIterations":27500,"algorithm":"pbkdf2-sha256","additionalParameters":{}}	10
+132fd55f-f9f5-410b-a45a-5cf86d6217fa	\N	password	d5ea372b-b383-4a42-a7d3-9785cce62c5f	1661544157899	My password	{"value":"uXDP5gTnAuPIuFzzuWMuWd4MLq+Y46TjK7l8UQm+nLeeTHH0yW4jS7u+bQd08f4KBD2ZWUfT36OAnPEUVvVC9g==","salt":"JnvATse3BrZU+VY+ndeXuQ==","additionalParameters":{}}	{"hashIterations":27500,"algorithm":"pbkdf2-sha256","additionalParameters":{}}	10
+1b6c79f7-94d6-47bd-8e28-5ab4d9f8d525	\N	password	77857d0d-eb2f-4037-bb1e-38ff2f91d05a	1661761889830	My password	{"value":"03j1UAGebBeLuFsXi3Kp95dOB330vDdGWEbiipk6FxCtKq4bG3AawWRmEkfowiwloIW2ak8VJm85zP9eLXaNqQ==","salt":"p1ad7sdNgp8dgpilc+RE5Q==","additionalParameters":{}}	{"hashIterations":27500,"algorithm":"pbkdf2-sha256","additionalParameters":{}}	10
+1b61b83e-3016-4c10-97d8-7c819381a96b	\N	password	8a75967b-d19c-48e1-9992-8abb57cee314	1661762543378	\N	{"value":"XzoKiAUiwZcFQoBzkmokRMepICfT0Ah/3AWj20umdxuxZFcaaSsqruDI4p0NS50ojrpGfgFg6yAsEknD6yMYwg==","salt":"FA7nNBBVGiXe4ISaCzZZaQ==","additionalParameters":{}}	{"hashIterations":27500,"algorithm":"pbkdf2-sha256","additionalParameters":{}}	10
 \.
 
 
@@ -2354,6 +2374,9 @@ COPY public.default_client_scope (realm_id, scope_id, default_scope) FROM stdin;
 80229060-53a8-4a28-bfc4-ceebabe05d64	7f755b10-af77-4d7c-9ca7-f46a179d86ef	t
 80229060-53a8-4a28-bfc4-ceebabe05d64	69a5e293-0504-4453-a2ae-bd3c35422ac2	f
 80229060-53a8-4a28-bfc4-ceebabe05d64	92161823-edea-4df2-ab3b-7923c06d9fea	t
+80229060-53a8-4a28-bfc4-ceebabe05d64	16c0ac5d-0ab4-425c-9ffc-bcd2c04caed0	t
+80229060-53a8-4a28-bfc4-ceebabe05d64	b5704760-278f-49af-adb7-efb002023c2f	t
+80229060-53a8-4a28-bfc4-ceebabe05d64	b16307a7-dadb-45e5-bf6a-09ceeb7fe75d	t
 \.
 
 
@@ -2577,7 +2600,12 @@ d8d1e63e-9eb0-40f6-bc46-cc9b3e941c71	f485b846-6289-40b6-a42c-287e95d8cd82	t	${ro
 2a4965b2-8926-4b48-a1cd-841f7f7e4335	008d1d7c-6622-4f57-9b63-6ba9bc55d1d9	t	${role_read-token}	read-token	80229060-53a8-4a28-bfc4-ceebabe05d64	008d1d7c-6622-4f57-9b63-6ba9bc55d1d9	\N
 1a723420-63dc-43cf-9cca-4b9155939561	80229060-53a8-4a28-bfc4-ceebabe05d64	f	${role_offline-access}	offline_access	80229060-53a8-4a28-bfc4-ceebabe05d64	\N	\N
 2bdef8e1-d7c6-4e0a-ae0f-035923df2758	80229060-53a8-4a28-bfc4-ceebabe05d64	f	${role_uma_authorization}	uma_authorization	80229060-53a8-4a28-bfc4-ceebabe05d64	\N	\N
-7f8e377e-2b57-46b1-870b-95601adcbc1b	80229060-53a8-4a28-bfc4-ceebabe05d64	f		developer	80229060-53a8-4a28-bfc4-ceebabe05d64	\N	\N
+bbebcd31-327a-419b-a463-8e2fd46c9c53	80229060-53a8-4a28-bfc4-ceebabe05d64	f		user	80229060-53a8-4a28-bfc4-ceebabe05d64	\N	\N
+297db9d7-eaac-40d4-8f34-ac31506259c3	646226dc-1492-41e1-afcb-b398abd036bd	t	\N	uma_protection	80229060-53a8-4a28-bfc4-ceebabe05d64	646226dc-1492-41e1-afcb-b398abd036bd	\N
+5a9a8bac-c79f-4f93-b170-06e42885f9e4	80229060-53a8-4a28-bfc4-ceebabe05d64	f		app_user	80229060-53a8-4a28-bfc4-ceebabe05d64	\N	\N
+dc80715a-a29e-4f71-81a0-5c179eef805a	646226dc-1492-41e1-afcb-b398abd036bd	t	\N	app_user	80229060-53a8-4a28-bfc4-ceebabe05d64	646226dc-1492-41e1-afcb-b398abd036bd	\N
+aad89f55-21f9-4284-82b5-6dfd3e0b5bfd	80229060-53a8-4a28-bfc4-ceebabe05d64	f		\N	80229060-53a8-4a28-bfc4-ceebabe05d64	\N	\N
+a4068e6e-8f49-47b0-aa74-d261b33be10a	80229060-53a8-4a28-bfc4-ceebabe05d64	f		app_admin	80229060-53a8-4a28-bfc4-ceebabe05d64	\N	\N
 \.
 
 
@@ -2678,6 +2706,9 @@ f64086b6-bc2c-4ea6-ad6f-e0bc1058f5df	allowed web origins	openid-connect	oidc-all
 d8d6f7e2-8bbe-4a14-9291-00b00ebece13	acr loa level	openid-connect	oidc-acr-mapper	\N	92161823-edea-4df2-ab3b-7923c06d9fea
 7834263a-7e68-49f5-8d79-bb2d496425d0	locale	openid-connect	oidc-usermodel-attribute-mapper	0466602c-8f11-4581-b7e4-d01932dd42df	\N
 6cb535c7-4bdf-4f22-9d5c-8d16e0a659e5	rl_dvlpr	openid-connect	oidc-role-name-mapper	\N	b16307a7-dadb-45e5-bf6a-09ceeb7fe75d
+a79bb444-e624-46f6-b106-f65e9a1496ea	Client ID	openid-connect	oidc-usersessionmodel-note-mapper	646226dc-1492-41e1-afcb-b398abd036bd	\N
+4d7c2382-e9c2-48bb-bf45-3ef65e2731a6	Client Host	openid-connect	oidc-usersessionmodel-note-mapper	646226dc-1492-41e1-afcb-b398abd036bd	\N
+d9688d09-d5a1-4680-b965-0dbf3b7dc117	Client IP Address	openid-connect	oidc-usersessionmodel-note-mapper	646226dc-1492-41e1-afcb-b398abd036bd	\N
 \.
 
 
@@ -2982,6 +3013,21 @@ d8d6f7e2-8bbe-4a14-9291-00b00ebece13	true	access.token.claim
 7834263a-7e68-49f5-8d79-bb2d496425d0	String	jsonType.label
 6cb535c7-4bdf-4f22-9d5c-8d16e0a659e5	ROLE_developer	new.role.name
 6cb535c7-4bdf-4f22-9d5c-8d16e0a659e5	developer	role
+4d7c2382-e9c2-48bb-bf45-3ef65e2731a6	clientHost	user.session.note
+4d7c2382-e9c2-48bb-bf45-3ef65e2731a6	true	id.token.claim
+4d7c2382-e9c2-48bb-bf45-3ef65e2731a6	true	access.token.claim
+4d7c2382-e9c2-48bb-bf45-3ef65e2731a6	clientHost	claim.name
+4d7c2382-e9c2-48bb-bf45-3ef65e2731a6	String	jsonType.label
+a79bb444-e624-46f6-b106-f65e9a1496ea	clientId	user.session.note
+a79bb444-e624-46f6-b106-f65e9a1496ea	true	id.token.claim
+a79bb444-e624-46f6-b106-f65e9a1496ea	true	access.token.claim
+a79bb444-e624-46f6-b106-f65e9a1496ea	clientId	claim.name
+a79bb444-e624-46f6-b106-f65e9a1496ea	String	jsonType.label
+d9688d09-d5a1-4680-b965-0dbf3b7dc117	clientAddress	user.session.note
+d9688d09-d5a1-4680-b965-0dbf3b7dc117	true	id.token.claim
+d9688d09-d5a1-4680-b965-0dbf3b7dc117	true	access.token.claim
+d9688d09-d5a1-4680-b965-0dbf3b7dc117	clientAddress	claim.name
+d9688d09-d5a1-4680-b965-0dbf3b7dc117	String	jsonType.label
 \.
 
 
@@ -2991,7 +3037,7 @@ d8d6f7e2-8bbe-4a14-9291-00b00ebece13	true	access.token.claim
 
 COPY public.realm (id, access_code_lifespan, user_action_lifespan, access_token_lifespan, account_theme, admin_theme, email_theme, enabled, events_enabled, events_expiration, login_theme, name, not_before, password_policy, registration_allowed, remember_me, reset_password_allowed, social, ssl_required, sso_idle_timeout, sso_max_lifespan, update_profile_on_soc_login, verify_email, master_admin_client, login_lifespan, internationalization_enabled, default_locale, reg_email_as_username, admin_events_enabled, admin_events_details_enabled, edit_username_allowed, otp_policy_counter, otp_policy_window, otp_policy_period, otp_policy_digits, otp_policy_alg, otp_policy_type, browser_flow, registration_flow, direct_grant_flow, reset_credentials_flow, client_auth_flow, offline_session_idle_timeout, revoke_refresh_token, access_token_life_implicit, login_with_email_allowed, duplicate_emails_allowed, docker_auth_flow, refresh_token_max_reuse, allow_user_managed_access, sso_max_lifespan_remember_me, sso_idle_timeout_remember_me, default_role) FROM stdin;
 328a8777-dc28-41dd-931b-66af1660c31c	60	300	60	\N	\N	\N	t	f	0	\N	master	0	\N	f	f	f	f	EXTERNAL	1800	36000	f	f	242805d5-7a12-4a07-8b69-c046f326d6fa	1800	f	\N	f	f	f	f	0	1	30	6	HmacSHA1	totp	560df60e-1a9b-4a64-ad30-146026c9f58c	e4a1f86d-bd20-4687-bcda-22be338747d8	c8df21b1-3808-48da-9146-3546dee7972e	22d0d2a0-d8be-4600-9c9d-4807035e396f	c86dd04d-b0e4-4580-8f6c-5721bb86e5e3	2592000	f	900	t	f	e179bc12-099a-4d68-9f28-9df1a14a90f3	0	f	0	0	c0e8f3f2-c318-4146-835d-eba53fc89bb6
-80229060-53a8-4a28-bfc4-ceebabe05d64	60	300	300	\N	\N	\N	t	f	0	\N	JsExecutor	0	\N	f	f	f	f	NONE	1800	36000	f	f	f485b846-6289-40b6-a42c-287e95d8cd82	1800	f	\N	f	f	f	f	0	1	30	6	HmacSHA1	totp	84f5c146-2eb2-412d-9d6d-a11cfb0bf83a	63349463-77be-4c6f-8623-0a6acd2bee8b	4aa604b3-d1a1-4866-bd38-072b8fd7cf46	4f93ebdb-cb14-474f-b8c0-0dc14a4442e4	81b8fde3-af19-48b9-8acd-672897f7ca5e	2592000	f	900	t	f	97b464f2-8f49-49b5-931b-cdbe4928af2e	0	f	0	0	9d8a0bfa-adbb-43ff-838e-01b3c15f334c
+80229060-53a8-4a28-bfc4-ceebabe05d64	60	300	1740	\N	\N	\N	t	f	0	\N	JsExecutor	0	\N	t	f	f	f	NONE	1800	36000	f	f	f485b846-6289-40b6-a42c-287e95d8cd82	1800	f	\N	f	f	f	f	0	1	30	6	HmacSHA1	totp	84f5c146-2eb2-412d-9d6d-a11cfb0bf83a	63349463-77be-4c6f-8623-0a6acd2bee8b	4aa604b3-d1a1-4866-bd38-072b8fd7cf46	4f93ebdb-cb14-474f-b8c0-0dc14a4442e4	81b8fde3-af19-48b9-8acd-672897f7ca5e	2592000	f	900	t	f	97b464f2-8f49-49b5-931b-cdbe4928af2e	0	f	0	0	9d8a0bfa-adbb-43ff-838e-01b3c15f334c
 \.
 
 
@@ -3020,15 +3066,10 @@ displayNameHtml	328a8777-dc28-41dd-931b-66af1660c31c	<div class="kc-logo-text"><
 defaultSignatureAlgorithm	328a8777-dc28-41dd-931b-66af1660c31c	RS256
 offlineSessionMaxLifespanEnabled	328a8777-dc28-41dd-931b-66af1660c31c	false
 offlineSessionMaxLifespan	328a8777-dc28-41dd-931b-66af1660c31c	5184000
-oauth2DeviceCodeLifespan	80229060-53a8-4a28-bfc4-ceebabe05d64	600
-oauth2DevicePollingInterval	80229060-53a8-4a28-bfc4-ceebabe05d64	5
-cibaBackchannelTokenDeliveryMode	80229060-53a8-4a28-bfc4-ceebabe05d64	poll
-cibaExpiresIn	80229060-53a8-4a28-bfc4-ceebabe05d64	120
-cibaInterval	80229060-53a8-4a28-bfc4-ceebabe05d64	5
-cibaAuthRequestedUserHint	80229060-53a8-4a28-bfc4-ceebabe05d64	login_hint
-parRequestUriLifespan	80229060-53a8-4a28-bfc4-ceebabe05d64	60
-frontendUrl	80229060-53a8-4a28-bfc4-ceebabe05d64	
-acr.loa.map	80229060-53a8-4a28-bfc4-ceebabe05d64	[]
+actionTokenGeneratedByUserLifespan-verify-email	80229060-53a8-4a28-bfc4-ceebabe05d64	
+actionTokenGeneratedByUserLifespan-idp-verify-account-via-email	80229060-53a8-4a28-bfc4-ceebabe05d64	
+actionTokenGeneratedByUserLifespan-reset-credentials	80229060-53a8-4a28-bfc4-ceebabe05d64	
+actionTokenGeneratedByUserLifespan-execute-actions	80229060-53a8-4a28-bfc4-ceebabe05d64	
 displayName	80229060-53a8-4a28-bfc4-ceebabe05d64	
 displayNameHtml	80229060-53a8-4a28-bfc4-ceebabe05d64	
 bruteForceProtected	80229060-53a8-4a28-bfc4-ceebabe05d64	false
@@ -3044,11 +3085,9 @@ actionTokenGeneratedByUserLifespan	80229060-53a8-4a28-bfc4-ceebabe05d64	300
 defaultSignatureAlgorithm	80229060-53a8-4a28-bfc4-ceebabe05d64	RS256
 offlineSessionMaxLifespanEnabled	80229060-53a8-4a28-bfc4-ceebabe05d64	false
 offlineSessionMaxLifespan	80229060-53a8-4a28-bfc4-ceebabe05d64	5184000
-clientSessionIdleTimeout	80229060-53a8-4a28-bfc4-ceebabe05d64	0
-clientSessionMaxLifespan	80229060-53a8-4a28-bfc4-ceebabe05d64	0
-clientOfflineSessionIdleTimeout	80229060-53a8-4a28-bfc4-ceebabe05d64	0
-clientOfflineSessionMaxLifespan	80229060-53a8-4a28-bfc4-ceebabe05d64	0
 webAuthnPolicyRpEntityName	80229060-53a8-4a28-bfc4-ceebabe05d64	keycloak
+oauth2DeviceCodeLifespan	80229060-53a8-4a28-bfc4-ceebabe05d64	600
+oauth2DevicePollingInterval	80229060-53a8-4a28-bfc4-ceebabe05d64	5
 webAuthnPolicySignatureAlgorithms	80229060-53a8-4a28-bfc4-ceebabe05d64	ES256
 webAuthnPolicyRpId	80229060-53a8-4a28-bfc4-ceebabe05d64	
 webAuthnPolicyAttestationConveyancePreference	80229060-53a8-4a28-bfc4-ceebabe05d64	not specified
@@ -3067,6 +3106,13 @@ webAuthnPolicyUserVerificationRequirementPasswordless	80229060-53a8-4a28-bfc4-ce
 webAuthnPolicyCreateTimeoutPasswordless	80229060-53a8-4a28-bfc4-ceebabe05d64	0
 webAuthnPolicyAvoidSameAuthenticatorRegisterPasswordless	80229060-53a8-4a28-bfc4-ceebabe05d64	false
 client-policies.profiles	80229060-53a8-4a28-bfc4-ceebabe05d64	{"profiles":[]}
+cibaBackchannelTokenDeliveryMode	80229060-53a8-4a28-bfc4-ceebabe05d64	poll
+cibaExpiresIn	80229060-53a8-4a28-bfc4-ceebabe05d64	120
+cibaInterval	80229060-53a8-4a28-bfc4-ceebabe05d64	5
+cibaAuthRequestedUserHint	80229060-53a8-4a28-bfc4-ceebabe05d64	login_hint
+parRequestUriLifespan	80229060-53a8-4a28-bfc4-ceebabe05d64	60
+frontendUrl	80229060-53a8-4a28-bfc4-ceebabe05d64	
+acr.loa.map	80229060-53a8-4a28-bfc4-ceebabe05d64	[]
 client-policies.policies	80229060-53a8-4a28-bfc4-ceebabe05d64	{"policies":[]}
 _browser_header.contentSecurityPolicyReportOnly	80229060-53a8-4a28-bfc4-ceebabe05d64	
 _browser_header.xContentTypeOptions	80229060-53a8-4a28-bfc4-ceebabe05d64	nosniff
@@ -3075,6 +3121,10 @@ _browser_header.xFrameOptions	80229060-53a8-4a28-bfc4-ceebabe05d64	SAMEORIGIN
 _browser_header.contentSecurityPolicy	80229060-53a8-4a28-bfc4-ceebabe05d64	frame-src 'self'; frame-ancestors 'self'; object-src 'none';
 _browser_header.xXSSProtection	80229060-53a8-4a28-bfc4-ceebabe05d64	1; mode=block
 _browser_header.strictTransportSecurity	80229060-53a8-4a28-bfc4-ceebabe05d64	max-age=31536000; includeSubDomains
+clientSessionIdleTimeout	80229060-53a8-4a28-bfc4-ceebabe05d64	0
+clientSessionMaxLifespan	80229060-53a8-4a28-bfc4-ceebabe05d64	0
+clientOfflineSessionIdleTimeout	80229060-53a8-4a28-bfc4-ceebabe05d64	0
+clientOfflineSessionMaxLifespan	80229060-53a8-4a28-bfc4-ceebabe05d64	0
 \.
 
 
@@ -3201,6 +3251,9 @@ COPY public.resource_attribute (id, name, value, resource_id) FROM stdin;
 --
 
 COPY public.resource_policy (resource_id, policy_id) FROM stdin;
+e57913d5-3b5a-446f-9dcc-7e6e02c71ee6	6c9e94c2-0686-4083-817a-0f50e4d583f1
+e57913d5-3b5a-446f-9dcc-7e6e02c71ee6	19283882-f264-42a6-ad36-38d7b2e55f92
+e57913d5-3b5a-446f-9dcc-7e6e02c71ee6	6c736ff1-8566-4b81-9cbb-2164255e15ff
 \.
 
 
@@ -3209,6 +3262,9 @@ COPY public.resource_policy (resource_id, policy_id) FROM stdin;
 --
 
 COPY public.resource_scope (resource_id, scope_id) FROM stdin;
+e57913d5-3b5a-446f-9dcc-7e6e02c71ee6	143d249e-a1e1-4e9b-91a4-63f2df833342
+e57913d5-3b5a-446f-9dcc-7e6e02c71ee6	084be5cd-636d-49f5-abb4-f6fefef54f7c
+e57913d5-3b5a-446f-9dcc-7e6e02c71ee6	ca275cb7-ea83-404a-b272-752d196da0ba
 \.
 
 
@@ -3217,6 +3273,7 @@ COPY public.resource_scope (resource_id, scope_id) FROM stdin;
 --
 
 COPY public.resource_server (id, allow_rs_remote_mgmt, policy_enforce_mode, decision_strategy) FROM stdin;
+559dfb53-c90c-4d4b-ba77-7235c4341189	f	0	1
 \.
 
 
@@ -3233,6 +3290,9 @@ COPY public.resource_server_perm_ticket (id, owner, requester, created_timestamp
 --
 
 COPY public.resource_server_policy (id, name, description, type, decision_strategy, logic, resource_server_id, owner) FROM stdin;
+6c9e94c2-0686-4083-817a-0f50e4d583f1	map-role.permission.aad89f55-21f9-4284-82b5-6dfd3e0b5bfd	\N	scope	0	0	559dfb53-c90c-4d4b-ba77-7235c4341189	\N
+19283882-f264-42a6-ad36-38d7b2e55f92	map-role-client-scope.permission.aad89f55-21f9-4284-82b5-6dfd3e0b5bfd	\N	scope	0	0	559dfb53-c90c-4d4b-ba77-7235c4341189	\N
+6c736ff1-8566-4b81-9cbb-2164255e15ff	map-role-composite.permission.aad89f55-21f9-4284-82b5-6dfd3e0b5bfd	\N	scope	0	0	559dfb53-c90c-4d4b-ba77-7235c4341189	\N
 \.
 
 
@@ -3241,6 +3301,7 @@ COPY public.resource_server_policy (id, name, description, type, decision_strate
 --
 
 COPY public.resource_server_resource (id, name, type, icon_uri, owner, resource_server_id, owner_managed_access, display_name) FROM stdin;
+e57913d5-3b5a-446f-9dcc-7e6e02c71ee6	role.resource.aad89f55-21f9-4284-82b5-6dfd3e0b5bfd	Role	\N	559dfb53-c90c-4d4b-ba77-7235c4341189	559dfb53-c90c-4d4b-ba77-7235c4341189	f	\N
 \.
 
 
@@ -3249,6 +3310,9 @@ COPY public.resource_server_resource (id, name, type, icon_uri, owner, resource_
 --
 
 COPY public.resource_server_scope (id, name, icon_uri, resource_server_id, display_name) FROM stdin;
+143d249e-a1e1-4e9b-91a4-63f2df833342	map-role	\N	559dfb53-c90c-4d4b-ba77-7235c4341189	\N
+084be5cd-636d-49f5-abb4-f6fefef54f7c	map-role-client-scope	\N	559dfb53-c90c-4d4b-ba77-7235c4341189	\N
+ca275cb7-ea83-404a-b272-752d196da0ba	map-role-composite	\N	559dfb53-c90c-4d4b-ba77-7235c4341189	\N
 \.
 
 
@@ -3265,6 +3329,7 @@ COPY public.resource_uris (resource_id, value) FROM stdin;
 --
 
 COPY public.role_attribute (id, role_id, name, value) FROM stdin;
+40967c14-8a80-47b6-871e-e2cce9a9df43	5a9a8bac-c79f-4f93-b170-06e42885f9e4	app_role	user
 \.
 
 
@@ -3283,6 +3348,9 @@ COPY public.scope_mapping (client_id, role_id) FROM stdin;
 --
 
 COPY public.scope_policy (scope_id, policy_id) FROM stdin;
+143d249e-a1e1-4e9b-91a4-63f2df833342	6c9e94c2-0686-4083-817a-0f50e4d583f1
+084be5cd-636d-49f5-abb4-f6fefef54f7c	19283882-f264-42a6-ad36-38d7b2e55f92
+ca275cb7-ea83-404a-b272-752d196da0ba	6c736ff1-8566-4b81-9cbb-2164255e15ff
 \.
 
 
@@ -3316,7 +3384,10 @@ COPY public.user_consent_client_scope (user_consent_id, scope_id) FROM stdin;
 
 COPY public.user_entity (id, email, email_constraint, email_verified, enabled, federation_link, first_name, last_name, realm_id, username, created_timestamp, service_account_client_link, not_before) FROM stdin;
 45a3abe7-4853-44f0-bbe5-c5dd013af39c	\N	b066081e-4753-4240-89d2-bf3157004296	f	t	\N	\N	\N	328a8777-dc28-41dd-931b-66af1660c31c	admin	1660561016706	\N	0
-180c5acf-8bff-495e-9a51-de0412edc61f	\N	ae7f15c5-d601-404c-b4ca-851f0d6af69f	f	t	\N			80229060-53a8-4a28-bfc4-ceebabe05d64	developer	1660562960196	\N	0
+d5ea372b-b383-4a42-a7d3-9785cce62c5f	\N	6c6e35a9-0827-4300-b486-4ddb98ede118	f	t	\N			80229060-53a8-4a28-bfc4-ceebabe05d64	app_admin	1661542283324	\N	0
+77857d0d-eb2f-4037-bb1e-38ff2f91d05a	\N	854fc2bf-bad7-4cec-9eb3-b6c34433c70c	f	t	\N			80229060-53a8-4a28-bfc4-ceebabe05d64	test	1661761869961	\N	0
+8a75967b-d19c-48e1-9992-8abb57cee314	test_reg@abc.com	test_reg@abc.com	f	t	\N	Test_reg	Test_reg	80229060-53a8-4a28-bfc4-ceebabe05d64	test_reg	1661762543218	\N	0
+57f4e9b7-73f4-462a-818e-3361404ee4d6	\N	b2c7881d-9de4-40ee-b464-ef9f0422aeb4	f	t	\N	\N	\N	80229060-53a8-4a28-bfc4-ceebabe05d64	service-account-swagger-ui-local	1661764641873	646226dc-1492-41e1-afcb-b398abd036bd	0
 \.
 
 
@@ -3392,8 +3463,14 @@ f15fa265-e476-4d8b-93f9-b3bae951690c	45a3abe7-4853-44f0-bbe5-c5dd013af39c
 283df9f6-4aa6-4cb9-ba9d-cfc518201536	45a3abe7-4853-44f0-bbe5-c5dd013af39c
 9d0e77f7-6c44-44f0-98bd-859ea9163701	45a3abe7-4853-44f0-bbe5-c5dd013af39c
 0b3ee2ad-90cb-4f61-8eb7-7c5419095aa3	45a3abe7-4853-44f0-bbe5-c5dd013af39c
-9d8a0bfa-adbb-43ff-838e-01b3c15f334c	180c5acf-8bff-495e-9a51-de0412edc61f
-7f8e377e-2b57-46b1-870b-95601adcbc1b	180c5acf-8bff-495e-9a51-de0412edc61f
+9d8a0bfa-adbb-43ff-838e-01b3c15f334c	d5ea372b-b383-4a42-a7d3-9785cce62c5f
+aad89f55-21f9-4284-82b5-6dfd3e0b5bfd	d5ea372b-b383-4a42-a7d3-9785cce62c5f
+9d8a0bfa-adbb-43ff-838e-01b3c15f334c	77857d0d-eb2f-4037-bb1e-38ff2f91d05a
+9d8a0bfa-adbb-43ff-838e-01b3c15f334c	8a75967b-d19c-48e1-9992-8abb57cee314
+9d8a0bfa-adbb-43ff-838e-01b3c15f334c	57f4e9b7-73f4-462a-818e-3361404ee4d6
+297db9d7-eaac-40d4-8f34-ac31506259c3	57f4e9b7-73f4-462a-818e-3361404ee4d6
+5a9a8bac-c79f-4f93-b170-06e42885f9e4	77857d0d-eb2f-4037-bb1e-38ff2f91d05a
+a4068e6e-8f49-47b0-aa74-d261b33be10a	d5ea372b-b383-4a42-a7d3-9785cce62c5f
 \.
 
 

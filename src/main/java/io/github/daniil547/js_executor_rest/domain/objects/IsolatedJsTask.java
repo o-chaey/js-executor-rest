@@ -51,6 +51,7 @@ public class IsolatedJsTask implements LanguageTask {
     public static final String AT = "\tat ";
     private final Context polyglotContext;
     private final UUID id;
+    private final User owner;
     private final String sourceCode;
     private final AtomicReference<Status> currentStatus;
     private final ByteArrayOutputStream out;
@@ -69,9 +70,10 @@ public class IsolatedJsTask implements LanguageTask {
      *
      * @param sourceCode     JavaScript code to be executed
      * @param statementLimit maximum number of statements allowed to be executed by this task
+     * @param owner          user who created the task
      */
-    public IsolatedJsTask(String sourceCode, long statementLimit) {
-        this(sourceCode, statementLimit, new ByteArrayOutputStream(), null);
+    public IsolatedJsTask(String sourceCode, long statementLimit, User owner) {
+        this(sourceCode, statementLimit, owner, new ByteArrayOutputStream(), null);
     }
 
     /**
@@ -80,15 +82,17 @@ public class IsolatedJsTask implements LanguageTask {
      * @param sourceCode     JavaScript code to be executed
      * @param statementLimit maximum number of statements allowed to be executed by this task
      * @param customOut      output stream for the task to write to
+     * @param owner          user who created the task
      */
-    public IsolatedJsTask(String sourceCode, long statementLimit, OutputStream customOut) {
-        this(sourceCode, statementLimit, null, customOut);
+    public IsolatedJsTask(String sourceCode, long statementLimit, OutputStream customOut, User owner) {
+        this(sourceCode, statementLimit, owner, null, customOut);
     }
 
     private IsolatedJsTask(String sourceCode,
                            long statementLimit,
-                           ByteArrayOutputStream defaultOut,
+                           User owner, ByteArrayOutputStream defaultOut,
                            OutputStream customOut) {
+        this.owner = owner;
         if (defaultOut != null && customOut != null) {
             throw new AssertionError(
                     "private IsolatedJsTask(String, long, ByteArrayOutputStream default, OutputStream custom)" +
@@ -186,6 +190,11 @@ public class IsolatedJsTask implements LanguageTask {
         id = UUID.randomUUID();
     }
 
+
+    @Override
+    public User getOwner() {
+        return this.owner;
+    }
 
     @Override
     public UUID getId() {
