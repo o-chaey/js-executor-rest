@@ -8,11 +8,13 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.oauth2.server.resource.OAuth2ResourceServerConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.util.ResourceUtils;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import javax.annotation.PostConstruct;
+import java.io.FileNotFoundException;
 
 
 @Configuration
@@ -28,11 +30,13 @@ public class SecurityConfig {
      * It appears that Spring uses server.ssl.trust-store not for mapping to javax.net.ssl.trustStore,
      * so we define our custom property and map it here
      */
-    @SuppressWarnings("ConstantConditions")
+    @SuppressWarnings({"ConstantConditions", "squid:S4449"})
     @PostConstruct
-    private void configureSSL() {
+    private void configureSSL() throws FileNotFoundException {
         //-Djavax.net.ssl.trustStore=src/main/resources/truststore.jks -Djavax.net.ssl.trustStorePassword=password
-        System.setProperty("javax.net.ssl.trustStore", env.getProperty("server.javax.net.ssl.trust-store"));
+        String trustStorePath = env.getProperty("server.javax.net.ssl.trust-store");
+        String resolvedPath = ResourceUtils.getFile(trustStorePath).getPath();
+        System.setProperty("javax.net.ssl.trustStore", resolvedPath);
         System.setProperty("javax.net.ssl.trustStorePassword",
                            env.getProperty("server.javax.net.ssl.trust-store-password"));
     }
@@ -45,8 +49,8 @@ public class SecurityConfig {
 
             .authorizeRequests()
             .mvcMatchers("/tasks/*").hasAnyAuthority(
-                    // hypothetically, swagger isn't the only possible client
-                    // doesn't really matter for our needs, though
+                    //                     hypothetically, swagger isn't the only possible client
+                    //                     doesn't really matter for our needs, though
                     "SCOPE_swagger", "SCOPE_app")
             .and()
 

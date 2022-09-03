@@ -79,7 +79,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 )
 @SecurityScheme(name = "Authorization",
                 type = SecuritySchemeType.OPENIDCONNECT,
-                openIdConnectUrl = "https://localhost:8081/realms/JsExecutor/.well-known/openid-configuration"
+                openIdConnectUrl = "https://keycloak:8443/realms/JsExecutor/.well-known/openid-configuration"
 )
 @Tag(name = "JS Executor", description = "Service for remote execution of JS code")
 @RestController

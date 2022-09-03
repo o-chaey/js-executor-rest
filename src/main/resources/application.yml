@@ -23,7 +23,7 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: https://localhost:8081/realms/JsExecutor
+          issuer-uri: https://keycloak:8443/realms/JsExecutor
   mvc:
     async:
       request-timeout: 3600000
@@ -47,8 +47,7 @@ server:
   javax:
     net:
       ssl:
-        # classpath:truststore.jks doesn't work for whatever reason
-        trust-store: src/main/resources/truststore.jks
+        trust-store: classpath:truststore.jks
         trust-store-password: password
         trust-store-provider: SUN
         trust-store-type: JKS

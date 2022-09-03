@@ -1,14 +1,26 @@
 version: "3.9"
 
 services:
+  js-executor:
+    container_name: js-executor
+    image: "io.github.daniil547/js-executor"
+    networks:
+      - backend
+    depends_on:
+      - keycloak
+    ports:
+      - "8080:8080"
+      - "5005:5005"
+    volumes:
+      - "../src/main/resources/:/app/resources/"
   postgres:
     container_name: postgres
     image: "postgres:14.5"
     networks:
       - backend
     volumes:
-      - ./db-data:/var/lib/postgresql/data/
-      - ./sql:/docker-entrypoint-initdb.d/:ro
+      - ./keycloak-docker/db-data:/var/lib/postgresql/data/
+      - ./keycloak-docker/sql:/docker-entrypoint-initdb.d/:ro
     environment:
       POSTGRES_DB: "kc_db"
       POSTGRES_USER: "kc_db_admin"
@@ -31,9 +43,9 @@ services:
     container_name: keycloak
     image: "quay.io/keycloak/keycloak:19.0.1"
     volumes:
-      - ./cert:/cert/
+      - ./keycloak-docker/cert:/cert/
     command:
-      - "start-dev --https-key-store-file=/cert/kc-key-store.p12"
+      - "start-dev --https-key-store-file=/cert/kc-certstore"
     depends_on:
       - "postgres"
     environment:
@@ -45,8 +57,10 @@ services:
       - KEYCLOAK_ADMIN_PASSWORD=admin
       - KC_REALM_NAME=master
       - KEYCLOAK_ENABLE_TLS=true
+      - KEYCLOAK_HOSTNAME=keycloak
+      - KEYCLOAK_FRONTEND_URL=keycloak
     ports:
-      - "8081:8443" # https
+      - "8443:8443" # https
       - "8082:8080" # http
       - "8787:8787" # debug port
     networks:
@@ -55,4 +69,3 @@ networks:
   backend:
     name: backend
     driver: bridge
-

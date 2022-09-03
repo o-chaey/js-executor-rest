@@ -2,6 +2,9 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+    <properties>
+        <java.version>17</java.version>
+    </properties>
     <build>
         <plugins>
             <plugin>
@@ -10,7 +13,6 @@
                 <configuration>
                     <source>17</source>
                     <target>17</target>
-                    <compilerArgs>--enable-preview</compilerArgs>
                     <annotationProcessorPaths>
                         <path>
                             <groupId>org.mapstruct</groupId>
@@ -41,6 +43,27 @@
                     </suppressionFiles>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>com.google.cloud.tools</groupId>
+                <artifactId>jib-maven-plugin</artifactId>
+                <version>3.2.1</version>
+                <configuration>
+                    <from>
+                        <image>
+                            docker://custom-graal-distroless
+                        </image>
+                    </from>
+                    <to>
+                        <image>io.github.daniil547/js-executor</image>
+                    </to>
+                    <container>
+                        <jvmFlags>
+                            <jvmFlag>-XX:+UnlockExperimentalVMOptions</jvmFlag>
+                            <jvmFlag>-XX:+EnableJVMCI</jvmFlag>
+                        </jvmFlags>
+                    </container>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
     <parent>
@@ -54,9 +77,6 @@
     <version>0.1.0-SNAPSHOT</version>
     <name>js-executor-rest</name>
     <description>Demo project for Spring Boot</description>
-    <properties>
-        <java.version>17</java.version>
-    </properties>
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
