@@ -55,18 +55,44 @@ The system consists of several major components:
 7) `cd external-res`
 8) `docker compose up`
 
-### Ports and passwords
+### Ports
 
-Generally, the convention in this project is that each user's password is the same as the username. After the system is
-up and running components can be accessed at (host:port, username:password):
+After the system is up and running components can be accessed at (host:port):
 
-- keycloak at `https://localhost:8443` (https, self-signed cert), `admin:admin`
-- pgadmin at `localhost:5050`, `abc@abc.com:abc`
-- swagger at `http://localhost:8080/swagger-ui/index.html#/` (or a port specified by you), `app_admin:app_amin` for
-  admin account
-  and user accounts can be registered at will. How to login:
-    1) press **Authorize**
-    2) under **Authorization (OAuth2, authorization_code)**
-    3) tick **openid** under **Scopes**
-    4) press **Authorize**
-    5) enter username and password or press **register** for a new user
+- keycloak at `https://localhost:8443` (https, self-signed cert)
+- pgadmin at `localhost:5050`
+- swagger at `http://localhost:8080/swagger-ui/index.html#/` (or a port specified by you)
+
+### Passwords
+
+Admin account for the JS Executor itself is *app_admin*, you can find out its password
+(and change it, which you should do) in KC. User accounts can be registered at will.  
+Like this:  
+1) press **Authorize**
+2) under **Authorization (OAuth2, authorization_code)**
+3) tick **openid** under **Scopes**
+4) press **Authorize**
+5) enter username and password or press **register** for a new user
+
+Credentials for other services (KC, Postgre DB, PGAdmin) are to be defined in
+external-res/users.env. Here's an example of such file, you only need to usernames and passwords:
+
+```
+# for access to KC amin console
+KEYCLOAK_ADMIN=
+KEYCLOAK_ADMIN_PASSWORD=
+
+# for access to the pgadmin console
+# it accepts email instead of username
+PGADMIN_DEFAULT_EMAIL=
+PGADMIN_DEFAULT_PASSWORD=
+
+# for access to the DB
+POSTGRES_USER=
+POSTGRES_PASSWORD=
+
+# for KC to access the DB
+# these must mirror POSTGRES_USER and POSTGRES_PASSWORD
+KC_DB_USERNAME=$POSTGRES_USER
+KC_DB_PASSWORD=$POSTGRES_PASSWORD
+```

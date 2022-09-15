@@ -4,6 +4,8 @@
 ### Project-spcific stuff ###
 logs/
 external-res/keycloak-docker/db-data/
+## Environment files with passwords etc. ##
+*.env
 
 
 ### Intellij+all ###

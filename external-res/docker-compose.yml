@@ -21,8 +21,8 @@ services:
       - ./keycloak-docker/sql:/docker-entrypoint-initdb.d/:ro
     environment:
       POSTGRES_DB: "kc_db"
-      POSTGRES_USER: "kc_db_admin"
-      POSTGRES_PASSWORD: "kc_db_admin"
+    env_file:
+      - users.env
     ports:
       - "5432:5432"
       #command: # debug level
@@ -30,9 +30,9 @@ services:
   pgadmin:
     container_name: pgadmin
     image: "dpage/pgadmin4:6.12"
-    environment:
-      PGADMIN_DEFAULT_EMAIL: abc@abc.com
-      PGADMIN_DEFAULT_PASSWORD: abc
+    #    environment:
+    env_file:
+      - users.env
     ports:
       - "5050:80"
     networks:
@@ -48,15 +48,13 @@ services:
       - "postgres"
     environment:
       - KC_DB=postgres
-      - KC_DB_USERNAME=kc_db_admin
-      - KC_DB_PASSWORD=kc_db_admin
       - KC_DB_URL=jdbc:postgresql://postgres:5432/kc_db
-      - KEYCLOAK_ADMIN=admin
-      - KEYCLOAK_ADMIN_PASSWORD=admin
       - KC_REALM_NAME=master
       - KEYCLOAK_ENABLE_TLS=true
       - KEYCLOAK_HOSTNAME=keycloak
       - KEYCLOAK_FRONTEND_URL=keycloak
+    env_file:
+      - users.env
     ports:
       - "8443:8443" # https
       - "8082:8080" # http
