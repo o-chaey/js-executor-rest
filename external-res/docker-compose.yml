@@ -11,8 +11,6 @@ services:
     ports:
       - "8080:8080"
       - "5005:5005"
-    volumes:
-      - "../src/main/resources/:/app/resources/"
   postgres:
     container_name: postgres
     image: "postgres:14.5"
