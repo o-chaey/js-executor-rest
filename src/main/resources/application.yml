@@ -16,8 +16,7 @@ springdoc:
     oauth:
       realm: JsExecutor
       clientId: swagger-ui-local
-      # !clientSecret property is for dev/test environment only!
-      clientSecret: SPhAtEWpKUg5hQrlC67mg25Wo13uLgtp
+      usePkceWithAuthorizationCodeGrant: true
 spring:
   security:
     oauth2:
