@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
+import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.oauth2.server.resource.OAuth2ResourceServerConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -18,6 +19,7 @@ import java.io.FileNotFoundException;
 
 
 @Configuration
+@EnableGlobalMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
     private final Environment env;
 
@@ -49,9 +51,10 @@ public class SecurityConfig {
 
             .authorizeRequests()
             .mvcMatchers("/tasks/*").hasAnyAuthority(
-                    //                     hypothetically, swagger isn't the only possible client
-                    //                     doesn't really matter for our needs, though
+                    // hypothetically, swagger isn't the only possible client
+                    // doesn't really matter for our needs, though
                     "SCOPE_swagger", "SCOPE_app")
+
             .and()
 
             .csrf()
@@ -61,8 +64,7 @@ public class SecurityConfig {
             .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             .and()
 
-            .oauth2ResourceServer(OAuth2ResourceServerConfigurer::jwt)
-        ;
+            .oauth2ResourceServer(OAuth2ResourceServerConfigurer::jwt);
         return http.build();
     }
 
